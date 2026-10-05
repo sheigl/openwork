@@ -20,7 +20,6 @@
   },
   "dependencies": {
     "@openwork/cdp": "workspace:*",
-    "@openwork/freestyle": "link:../../../packages/freestyle",
     "@openwork/env": "workspace:*",
     "@openwork/timeline": "workspace:*"
   }

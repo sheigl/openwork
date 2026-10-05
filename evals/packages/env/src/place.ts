@@ -337,14 +337,9 @@ class DaytonaPlace implements Place {
 export function resolvePlace(env: NodeJS.ProcessEnv = process.env): Place {
   // Explicit values must not silently fall through to a local runtime.
   const target = targetFromEnv(env);
-  if (target.provider === "freestyle") {
-    throw new Error("Freestyle placement supports preview-desktop, preview-app-web and acme-web; this recipe does not support Freestyle.");
-  }
-  // Den stays in its own Linux Daytona sandbox even when a release desktop
-  // targets Windows. The preview recipe provisions that Windows VM separately.
-  if (target.provider === "daytona" && target.os === "windows" && env.OPENWORK_WORLD_PREVIEW_DAYTONA !== "1") {
-    throw new Error("Daytona Windows is available only for the published preview-desktop release recipe.");
-  }
+  // The Freestyle and Daytona placements went with the cloud sandbox provider.
+  // resolveTarget fails closed on them before reaching this point, so there is
+  // nothing left to branch on here.
   if (daytonaPlacement(env)) {
     return new DaytonaPlace(
       resolveEvalRef(env),

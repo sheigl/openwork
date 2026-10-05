@@ -12,25 +12,10 @@ export interface ScriptWorld {
  * fails with the new one instead of silently starting something else.
  */
 export const RENAMED_WORLDS: Readonly<Record<string, string>> = {
-  "app-web": "preview-app-web",
   "dev-headless": "dev-app-web",
   "desktop-prod-live": "live-desktop",
   "headless-prod-live": "live-app-web",
-  "solo": "preview-full --seed workspace",
-  "evidence-web": "./packages/freestyle/worlds/evidence-web.ts",
-  "acme-docs": "./evals/docs-shots/world.ts",
-  "litellm-per-member": "./examples/litellm-per-member-keys/world.ts",
-  "den-split-origin-kind": "./evals/worlds/den-split-origin-kind.world.ts",
-  "remote-session": "./evals/worlds/infra/remote-session.ts",
-  "cloud-model-infra": "./evals/worlds/infra/cloud-model-infra.ts",
-  "cloud-model-infra-worker": "./evals/worlds/infra/cloud-model-infra-worker.ts",
-  // Removed: nothing ran them; these cover the same ground.
-  "azure-byok": "preview-den",
-  "gateway-local": "preview-den",
-  "den-gateway-local": "preview-den",
-  "cross-workspace-split-view": "preview-full --seed workspace",
 };
-
 export function worldScriptName(path: string): string {
   return basename(path, extname(path));
 }

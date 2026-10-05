@@ -132,9 +132,6 @@ importers:
       '@openwork/cdp':
         specifier: workspace:*
         version: link:../cdp
-      '@openwork/freestyle':
-        specifier: link:../../../packages/freestyle
-        version: link:../../../packages/freestyle
       '@openwork/hosts':
         specifier: workspace:*
         version: link:../hosts
@@ -178,9 +175,6 @@ importers:
       '@openwork/env':
         specifier: workspace:*
         version: link:../env
-      '@openwork/freestyle':
-        specifier: link:../../../packages/freestyle
-        version: link:../../../packages/freestyle
       '@openwork/timeline':
         specifier: workspace:*
         version: link:../timeline

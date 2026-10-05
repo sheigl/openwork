@@ -13,7 +13,7 @@ import type { SourceKind } from "./source.ts";
 export type GuideSourceKind = SourceKind | "ref";
 
 export interface WorldTargetGuide {
-  /** A `supportedTargets` entry, for example `freestyle/linux`. */
+  /** A `supportedTargets` entry, for example `local/host`. */
   target: string;
   /** Seeds accepted on this target; empty when the world takes no seed. */
   seeds: readonly string[];
@@ -39,21 +39,14 @@ export interface WorldGuide {
   caveats?: readonly string[];
 }
 
-/** The default source of remote previews: what "the latest alpha" means here. */
-export const DEFAULT_DEV_SOURCE = "ref:dev: the current origin/dev commit, pinned to its full SHA at launch (the source the alpha channel is built from)";
-const DEV = DEFAULT_DEV_SOURCE;
+/** The default source for local worlds: this checkout, uncommitted changes included. */
+export const DEFAULT_DEV_SOURCE = "local: this checkout, including uncommitted changes";
 const LOCAL = "local: this checkout, including uncommitted changes";
-const DEN_SEEDS = ["fresh", "team", "restricted", "workspace"];
 const UP = "pnpm world up";
 const DETACH = "--detach --timeout 600000";
-const NO_MODELS = "No model credentials are seeded; chat cannot reach a live model until someone adds a provider.";
 
 /** What each seed prepares. Seeds are named scenarios, not arbitrary fixtures. */
 export const SEED_MEANINGS: Readonly<Record<string, string>> = {
-  fresh: "First launch: nothing is created or signed in; where the world has a Den it opens at signup.",
-  team: "A seeded organization owner with demo Slack, Notion, Linear, Google Calendar and Gmail (in-memory Acme Robotics data) plus real Notion and Linear connectors (individual accounts stay unconnected).",
-  restricted: "The team seed with Den's canonical restricted desktop policy applied.",
-  workspace: "The team seed; with a desktop (preview-full) it is signed in to a workspace with the demo apps ready.",
   blank: "Exact published release bytes with a completely blank, unseeded profile.",
 };
 
@@ -66,75 +59,48 @@ export const EXAMPLE_PLACEHOLDERS: Readonly<Record<string, string>> = {
 };
 
 export const WORLD_GUIDES: Readonly<Record<string, WorldGuide>> = {
-  "preview-desktop": {
-    family: "preview",
-    components: ["desktop"],
-    targets: [
-      { target: "local/host", seeds: ["fresh"], sources: ["local"], defaultSource: LOCAL, note: "A native desktop window on this computer; no Den or account." },
-      { target: "daytona/linux", seeds: ["fresh", "blank"], sources: ["sha", "ref", "release"], defaultSource: DEV, note: "Linux Electron in a private noVNC viewer. fresh builds a pushed commit; blank runs exact published release bytes." },
-      { target: "daytona/windows", seeds: ["blank"], sources: ["release"], note: "Only an exact published Windows x64 release in a private VM." },
-      { target: "freestyle/linux", seeds: ["fresh"], sources: ["sha", "ref"], defaultSource: DEV, note: "Signed-out desktop snapshot of a pushed commit: no Den, releases or --env app settings." },
-    ],
-    examples: [
-      { intent: "Latest dev (alpha) desktop to click around, signed out, on Freestyle", command: `${UP} preview-desktop --place freestyle --stage <stage> ${DETACH}` },
-      { intent: "Latest dev (alpha) desktop on Daytona (accepts --env app settings)", command: `${UP} preview-desktop --place daytona --stage <stage> ${DETACH}` },
-      { intent: "Exact published Linux release with a blank profile", command: `${UP} preview-desktop --place daytona --stage <stage> --source desktop=release:<x.y.z>/<distribution> --seed blank ${DETACH}` },
-      { intent: "Exact published Windows release", command: `${UP} preview-desktop --place daytona --os windows --stage <stage> --source desktop=release:<x.y.z>/<distribution> --seed blank ${DETACH}` },
-      { intent: "This checkout as a native desktop window", command: `${UP} preview-desktop --stage <stage>` },
-    ],
-    caveats: [
-      "The desktop app alone: for a signed-in desktop use preview-full --seed workspace.",
-      NO_MODELS,
-      "Remote desktops are Linux (or a published Windows release), not a macOS parity check.",
-    ],
-  },
-  "preview-den": {
-    family: "preview",
-    components: ["den"],
-    targets: [
-      { target: "local/host", seeds: DEN_SEEDS, sources: ["local"], defaultSource: LOCAL, note: "Den on this computer's MySQL and Redis." },
-      { target: "daytona/linux", seeds: DEN_SEEDS, sources: ["sha", "ref"], defaultSource: DEV, note: "Den in a private Daytona sandbox." },
-    ],
-    examples: [
-      { intent: "Den signup and onboarding from latest dev", command: `${UP} preview-den --place daytona --stage <stage> --seed fresh ${DETACH}` },
-      { intent: "Seeded team administration (demo apps plus real connectors)", command: `${UP} preview-den --place daytona --stage <stage> --seed team ${DETACH}` },
-      { intent: "A specific pushed commit", command: `${UP} preview-den --place daytona --stage <stage> --source den=sha:<full-pushed-sha> --seed fresh ${DETACH}` },
-    ],
-    caveats: ["Den alone: no desktop app. Mail stays in the preview's development outbox."],
-  },
-  "preview-full": {
-    family: "preview",
-    components: ["den", "desktop"],
-    targets: [
-      { target: "local/host", seeds: DEN_SEEDS, sources: ["local"], defaultSource: LOCAL, note: "Den on this computer's MySQL and Redis plus a native desktop window." },
-      { target: "daytona/linux", seeds: DEN_SEEDS, sources: ["sha", "ref"], defaultSource: DEV, note: "Two private Daytona sandboxes: Den plus a Linux desktop wired to it. Select a commit with --source den=...; the desktop builds from the same commit." },
-    ],
-    examples: [
-      { intent: "Signed-in desktop workspace against its own Den, latest dev", command: `${UP} preview-full --place daytona --stage <stage> --seed workspace ${DETACH}` },
-      { intent: "Team owner desktop with demo Slack, Notion, Linear, Calendar and Gmail", command: `${UP} preview-full --place daytona --stage <stage> --seed team ${DETACH}` },
-      { intent: "Den signup plus a first-launch desktop", command: `${UP} preview-full --place daytona --stage <stage> --seed fresh ${DETACH}` },
-      { intent: "A specific pushed commit", command: `${UP} preview-full --place daytona --stage <stage> --source den=sha:<full-pushed-sha> --seed workspace ${DETACH}` },
-    ],
-    caveats: [NO_MODELS, "Does not run on Freestyle; preview-desktop there runs the desktop app alone, signed out."],
-  },
-  "preview-app-web": {
+  "dev-app-web": {
     family: "web",
     components: ["*"],
     targets: [
-      { target: "local/host", seeds: [], sources: ["local"], defaultSource: LOCAL },
-      { target: "daytona/linux", seeds: [], sources: ["sha", "ref"], note: "A private signed Daytona URL. A source is required: --source ref:dev or sha:<full-pushed-sha>." },
-      { target: "freestyle/linux", seeds: [], sources: ["sha", "ref"], note: "A source is required: --source ref:dev or sha:<full-pushed-sha>." },
+      { target: "local/host", seeds: [], sources: ["local"], defaultSource: LOCAL,
+        note: "The only placement left in this fork. It always runs this working tree; there is no remote sandbox to select." },
     ],
     examples: [
-      { intent: "Web app from latest dev on a private Daytona URL", command: `${UP} preview-app-web --place daytona --stage <stage> --source ref:dev ${DETACH}` },
-      { intent: "Web app from latest dev on Freestyle", command: `${UP} preview-app-web --place freestyle --stage <stage> --source ref:dev ${DETACH}` },
-      { intent: "This checkout's web app", command: `${UP} preview-app-web --stage <stage>` },
+      { intent: "This checkout's server plus web UI, state kept between runs", command: `${UP} dev-app-web --detach` },
+      { intent: "The same, in the foreground", command: `${UP} dev-app-web` },
     ],
-    caveats: ["The source web app and its server, not Den's web UI. No Den or activation is seeded."],
+    caveats: [
+      "Writes tmp/headless-server.json and never reads ~/.config/openwork/server.json.",
+      "Listens on loopback only; it authorizes whatever reaches the port, so do not publish it.",
+    ],
+  },
+  "live-app-web": {
+    family: "web",
+    components: ["*"],
+    targets: [
+      { target: "local/macos", seeds: [], sources: ["local"], defaultSource: LOCAL,
+        note: "Shares your installed production desktop state, so it needs the explicit opt-in below." },
+    ],
+    examples: [
+      { intent: "Source web app against your installed production state", command: `${UP} live-app-web -- --allow-shared-state` },
+    ],
+    caveats: ["Mutates real installed state. Requires --allow-shared-state after `--`."],
+  },
+  "live-desktop": {
+    family: "preview",
+    components: ["*"],
+    targets: [
+      { target: "local/macos", seeds: ["blank"], sources: ["local"], defaultSource: LOCAL,
+        note: "Shares your installed production state, so it needs the explicit opt-in below." },
+    ],
+    examples: [
+      { intent: "Source desktop app against your installed production state", command: `${UP} live-desktop -- --allow-shared-state` },
+    ],
+    caveats: ["Mutates real installed state. Requires --allow-shared-state after `--`."],
   },
 };
 
-/** Seeds a guided world accepts on any target, in catalog order. */
 export function guideSeeds(guide: WorldGuide): string[] {
   return [...new Set(guide.targets.flatMap((target) => target.seeds))];
 }

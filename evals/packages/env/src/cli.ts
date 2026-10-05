@@ -3,13 +3,12 @@ import { fileURLToPath } from "node:url";
 import { createConnection } from "mysql2/promise";
 import { main as runWorldCli, parseWorldArgs, type PreflightCheck, type Reaper } from "@openwork/world";
 import { DEFAULT_MYSQL_URL, localMysqlIsRunning, localRedisIsRunning } from "./place.ts";
-import { daytonaLoginCheck, diagnoseWorldFailure, freestyleKeyCheck } from "./world-requirements.ts";
 
 /**
  * What the world driver and its recipes load from this checkout. When a remote
  * world builds another commit, drift here means the driver is not that commit's.
  */
-const WORLD_RECIPE_PATHS = ["worlds", "packages/world", "packages/freestyle", "evals/packages", ".devcontainer"];
+const WORLD_RECIPE_PATHS = ["worlds", "packages/world", "evals/packages", ".devcontainer"];
 
 const REPO_ROOT = fileURLToPath(new URL("../../../..", import.meta.url));
 const WORLDS_DIRECTORY = fileURLToPath(new URL("../../../../worlds", import.meta.url));
@@ -92,44 +91,13 @@ export function main(argv = process.argv.slice(2)): Promise<number> {
   return runWorldCli(argv, {
     cwd: REPO_ROOT,
     worldsDirectory: WORLDS_DIRECTORY,
-    preflight: [dockerCheck, mysqlCheck, redisCheck, daytonaLoginCheck, freestyleKeyCheck],
-    diagnose: diagnoseWorldFailure,
+    preflight: [dockerCheck, mysqlCheck, redisCheck],
     recipePaths: WORLD_RECIPE_PATHS,
     reapers: {
       "mysql-db": dropEphemeralDatabase,
-      "daytona-windows-preview": async (entry) => {
-        if (!/^openwork-world-win-[0-9a-f]{16}$/.test(entry.match ?? "") || !/^[a-zA-Z0-9-]{1,100}$/.test(entry.id)) {
-          return { status: "skipped", reason: "outside Windows world ownership boundary" };
-        }
-        const { defaultDaytonaExec } = await import("@openwork/hosts");
-        const info = await defaultDaytonaExec(["info", entry.id, "-f", "json"], { timeoutMs: 30_000 });
-        if (info.code !== 0) {
-          return /not found|does not exist/i.test(info.stderr + info.stdout)
-            ? { status: "missing" } : { status: "skipped", reason: "could not verify sandbox ownership" };
-        }
-        let value: unknown;
-        try { value = JSON.parse(info.stdout); } catch { return { status: "skipped", reason: "invalid sandbox identity" }; }
-        if (typeof value !== "object" || value === null || !("id" in value) || value.id !== entry.id
-          || !("name" in value) || value.name !== entry.match || !("public" in value) || value.public !== false
-          || !("snapshot" in value) || value.snapshot !== "windows-medium") {
-          return { status: "skipped", reason: "sandbox ownership mismatch" };
-        }
-        const { deleteSandboxes } = await import("@openwork/hosts");
-        await deleteSandboxes([entry.id], { log: () => {} });
-        return { status: "reaped" };
-      },
-      "freestyle-evidence": async (entry) => {
-        if (entry.match !== entry.id) return { status: "skipped", reason: "identity mismatch" };
-        const { deleteEvidenceVm } = await import("../../../../packages/freestyle/src/checkpoints.ts");
-        await deleteEvidenceVm(entry.id);
-        return { status: "reaped" };
-      },
-      "freestyle-preview": async (entry) => {
-        if (entry.match !== entry.id) return { status: "skipped", reason: "identity mismatch" };
-        const { deletePreview } = await import("../../../../packages/freestyle/src/index.ts");
-        await deletePreview(entry.id);
-        return { status: "reaped" };
-      },
+      // The freestyle-preview, freestyle-evidence and daytona-windows-preview
+      // reapers went with the cloud sandbox provider. Local placements hold no
+      // reclaimable sandbox, so this map is now empty.
     },
   });
 }

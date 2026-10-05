@@ -2,7 +2,11 @@
  * Where a world runs: a provider (who owns the machine) and the operating
  * system on it. Every other placement fact derives from this pair.
  */
-export const WORLD_PROVIDERS = ["local", "daytona", "freestyle"] as const;
+/**
+ * Self-hosted fork: `local` is the only placement left. The cloud sandbox
+ * providers (Daytona and Freestyle) went with ee/ and packages/freestyle.
+ */
+export const WORLD_PROVIDERS = ["local"] as const;
 export type WorldProvider = typeof WORLD_PROVIDERS[number];
 
 export const WORLD_OSES = ["linux", "macos", "windows"] as const;
@@ -22,8 +26,6 @@ export const OS_ENV = "OPENWORK_WORLD_OS";
  */
 export const PROVIDER_OSES: Record<WorldProvider, "host" | readonly WorldOs[]> = {
   local: "host",
-  daytona: ["linux", "windows"],
-  freestyle: ["linux"],
 };
 
 export function isWorldProvider(value: unknown): value is WorldProvider {

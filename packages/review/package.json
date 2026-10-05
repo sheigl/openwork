@@ -5,10 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./src/schema.ts",
-    "./storage": "./src/storage.ts"
+    "./storage": "./src/storage.ts",
+    "./checkpoint-schema": "./src/checkpoint-schema.ts"
   },
   "dependencies": {
-    "@openwork/freestyle": "workspace:*",
     "@vercel/blob": "^2.3.0",
     "zod": "4.3.6"
   }

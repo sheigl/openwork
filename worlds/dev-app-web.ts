@@ -58,7 +58,7 @@ export async function bootDevHeadless(
 
 export function assertDevHeadlessPlacement(env: NodeJS.ProcessEnv): void {
   if (env.OPENWORK_WORLD_PLACE && env.OPENWORK_WORLD_PLACE !== "local") {
-    throw new Error("dev-app-web supports only --place local; use preview-app-web for Daytona.");
+    throw new Error("dev-app-web supports only --place local. The cloud sandbox placements went with the control plane.");
   }
 }
 

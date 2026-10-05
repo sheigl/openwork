@@ -1,5 +1,5 @@
 import type { Surface } from "@openwork/cdp";
-import type { EvidenceCheckpoint } from "@openwork/freestyle/checkpoint-schema";
+import type { EvidenceCheckpoint } from "@openwork/review/checkpoint-schema";
 
 /**
  * Starts a snapshot of the world behind a surface. Resolves once the provider has

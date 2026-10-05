@@ -6,7 +6,7 @@ import { resolveEvalEngine } from "@openwork/env/eval-engine";
 import type { EvalEngine } from "@openwork/env/eval-engine";
 import { resolveSandboxRef } from "@openwork/env/eval-ref";
 import type { ScreenshotArtifact } from "./screenshot.ts";
-import { parseEvidenceCheckpoint } from "@openwork/freestyle/checkpoint-schema";
+import { parseEvidenceCheckpoint } from "@openwork/review/checkpoint-schema";
 import { judgeVision } from "./validate.ts";
 import type { ValidateOptions, VisualEvidenceResult, VisualExpectationResult } from "./validate.ts";
 
