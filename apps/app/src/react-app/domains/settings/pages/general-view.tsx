@@ -22,7 +22,9 @@ import { Button } from "@/components/ui/button";
 export type GeneralSettingsViewProps = {
   onNavigateTab: (tab: SettingsTab) => void;
   developerMode: boolean;
-  onSendFeedback: () => void;
+  // Optional: self-hosted builds ship no feedback destination, so the button
+  // hides itself rather than opening an empty URL.
+  onSendFeedback?: () => void;
   onJoinDiscord: () => void;
   onReportIssue: () => void;
 };
@@ -133,15 +135,17 @@ export function GeneralSettingsView(props: GeneralSettingsViewProps) {
               <div className="mt-1 max-w-[58ch] text-[11px] text-dls-secondary">{t("settings.feedback_desc")}</div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={props.onSendFeedback}
-              >
-                <MessageCircle size={12} />
-                {t("settings.send_feedback")}
-                <ArrowUpRight size={11} />
-              </Button>
+              {props.onSendFeedback ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={props.onSendFeedback}
+                >
+                  <MessageCircle size={12} />
+                  {t("settings.send_feedback")}
+                  <ArrowUpRight size={11} />
+                </Button>
+              ) : null}
               <Button
                 variant="outline"
                 size="sm"

@@ -419,6 +419,13 @@ export function SessionRoute() {
     loading: dashboardAvailabilityLoading,
   } = useDashboardDeploymentAvailability();
   const platform = usePlatform();
+  // Self-hosted fork: buildFeedbackUrl returns null unless
+  // VITE_OPENWORK_FEEDBACK_URL is configured. Leaving this undefined hides the
+  // feedback entries instead of opening an empty URL.
+  const feedbackStatusBarUrl = buildFeedbackUrl({ entrypoint: "status-bar" });
+  const feedbackStatusBarAction = feedbackStatusBarUrl
+    ? () => platform.openLink(feedbackStatusBarUrl)
+    : undefined;
   const toggleSidebar = useUiStateStore((state) => state.toggleSidebar);
   const denAuth = useDenAuth();
   // On desktop, Dashboard and Automations stay in the sidebar while signed
@@ -3806,13 +3813,10 @@ export function SessionRoute() {
       hasUsableModel={hasUsableModel}
       providers={providers}
       mcpConnectedCount={mcpConnectedCount}
-      onSendFeedback={() => {
-        platform.openLink(
-          buildFeedbackUrl({
-            entrypoint: "status-bar",
-          }),
-        );
-      }}
+      // Null when VITE_OPENWORK_FEEDBACK_URL is unset, in which case
+      // onSendFeedback stays undefined so every feedback surface hides itself
+      // rather than opening an empty URL.
+      onSendFeedback={feedbackStatusBarAction}
       onOpenSettings={() => handleOpenSettings("/settings/general")}
       onOpenExtensions={() => handleOpenExtensions()}
       onOpenProviderAuth={handleOpenProviderAuth}

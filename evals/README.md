@@ -224,7 +224,7 @@ Surface and substrate are independent axes:
 Run a live spec only by exact name and with explicit consent and endpoint values:
 
 ```bash
-OPENWORK_EVAL_LIVE=1 OPENWORK_EVAL_LIVE_DEN_API_URL=https://api.openworklabs.com OPENWORK_EVAL_SECRET_LIVE_MAILBOX_EMAIL=<mailbox> pnpm evals:pr specs/prod-den-signup-invites.live.test.ts
+OPENWORK_EVAL_LIVE=1 OPENWORK_EVAL_LIVE_DEN_API_URL=https://den.internal.example OPENWORK_EVAL_SECRET_LIVE_MAILBOX_EMAIL=<mailbox> pnpm evals:pr specs/prod-den-signup-invites.live.test.ts
 ```
 
 The live Den is attached and never deleted. Timestamped plus-addressed identities,
@@ -432,7 +432,7 @@ second lifecycle layer.
 Everyday scripts are `preview-desktop` (app only), `preview-den` (Den only),
 `preview-full` (Den plus desktop), `preview-app-web`, `acme-web`, `dev-app-web`,
 and `live-desktop`/`live-app-web`. `pnpm world list` shows the current set.
-Colocated scripts include `evals/docs-shots/world.ts` and `evals/worlds/infra/`.
+Colocated scripts include `evals/worlds/infra/`.
 
 Detached scripts write PID ownership receipts to
 `evals/results/.worlds/scripts/<name>.json`. A receipt records the script path,
@@ -446,7 +446,7 @@ The root `pnpm world` command requires Node 24+. Its interactive lifecycle is:
 ```bash
 pnpm world up preview-full -- --scenario workspace   # foreground; Ctrl-C disposes its stack
 pnpm world up preview-den --detach                   # background; waits for its receipt
-pnpm world up ./evals/docs-shots/world.ts --detach --timeout 600000
+pnpm world up ./evals/worlds/infra/demo.ts --detach --timeout 600000
 pnpm world down preview-den                          # signal it and wait for native disposal
 pnpm world list
 pnpm world forget <name>
@@ -506,13 +506,6 @@ Import the script's builder, create one disposal stack, and call the builder.
 Compose journeys from `@openwork/behaviors`; executable coverage belongs in
 `evals/specs`.
 
-```ts
-import { bootAcmeDocs } from "../docs-shots/world.ts";
-
-await using stack = new AsyncDisposableStack();
-const world = await bootAcmeDocs(stack, place);
-const docs = world.app("docs");
-```
 
 ### Provision a fresh setup
 
@@ -535,7 +528,7 @@ log only to inspect or stop the existing detached process.
 
 ### Docs screenshots and demos
 
-Docs tooling imports `bootAcmeDocs`; demos use `bootAcmeDemo`. Their standalone
+Demos use `bootAcmeDemo`. Their standalone
 scripts call the same builders, so importing, CLI use, and specs share one
 implementation.
 

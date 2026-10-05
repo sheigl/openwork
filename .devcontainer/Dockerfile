@@ -1,8 +1,10 @@
-# Full Electron + Den dev environment for Daytona sandboxes.
+# Full Electron dev environment for devcontainers / Codespaces.
 #
-# Clones the repo from GitHub, installs deps, and provides
-# Xvfb + noVNC so you can see/steer the real Electron app
-# from your browser.
+# Installs deps and provides Xvfb + noVNC so you can see/steer the real
+# Electron app from your browser.
+#
+# The MySQL client and the Den/DAYTONA ports were removed along with the ee/
+# cloud control plane, which this container no longer runs.
 
 FROM node:20-bookworm
 
@@ -14,13 +16,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcomposite1 libxdamage1 libxfixes3 libcups2 \
     libpango-1.0-0 libcairo2 \
     xvfb x11vnc novnc websockify fluxbox xterm \
-    default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # pnpm + bun
 RUN corepack enable && corepack prepare pnpm@latest --activate
 # Pin bun to the CI-proven 1.3 line; unpinned installs picked up bun 1.4.0,
-# which breaks the Den/desktop sandbox stack (sign-in grant exchange fails).
+# which broke the desktop sandbox stack.
 RUN npm install -g bun@1.3.14
 
 # noVNC index
@@ -32,9 +33,9 @@ ENV PNPM_HOME=/root/.local/share/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 
 # Clone and install
-ARG REPO_URL=https://github.com/different-ai/openwork.git
+ARG REPO_URL=https://github.com/sheigl/openwork.git
 ARG BRANCH=dev
 WORKDIR /workspace
 RUN git clone --depth 1 --branch $BRANCH $REPO_URL . && pnpm install --frozen-lockfile || pnpm install
 
-EXPOSE 3005 5173 6080 8788 9825
+EXPOSE 5173 6080 9825

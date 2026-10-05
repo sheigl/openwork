@@ -6,8 +6,8 @@ description: Validate the release, check the released binaries, is 0.18.x safe t
 # Skill: validate-a-release
 
 Run after `release` reports the GitHub release published. Every check runs on
-the artifacts users download, never on a local build. macOS arm64 host, MySQL
-on `127.0.0.1:3306` (`pnpm dev:den:mysql`), `gh` authenticated. Work from a
+the artifacts users download, never on a local build. macOS arm64 host, `gh`
+authenticated. Work from a
 clean checkout (evidence is bound to its `git HEAD`): `origin/dev` today; from
 the first release that ships these specs, the tag's own checkout
 (`git worktree add /tmp/ow-vX.Y.Z vX.Y.Z`) so the gate matches the binary.
@@ -71,15 +71,9 @@ verdict is `incomplete`, never passed. Before each journey confirm the
 extracted bundle is still the release:
 `/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$ENT/Contents/Info.plist"` must print `$V` (re-extract if not).
 
-Second lane for 3+4 against a Den built from the release tag (covers the Den
-the release ships with, not just the local one):
-
-```bash
-bash .devcontainer/test-server-on-daytona.sh v$V --seed --name release-$V-den --auto-stop 90   # prints DEN_WEB_URL / DEN_API_URL
-OPENWORK_EVAL_DEN_WEB_URL=<DEN_WEB_URL> <same variables as journey 3+4> pnpm evals:e2e released-enterprise-activated --den <DEN_API_URL>
-daytona delete release-$V-den
-```
-
+There is no second lane in this fork. The Den control plane is gone, so there is
+no release-hosted Den to validate against; journeys 3 and 4 run against the
+release's own artifacts only.
 Journeys 1 and 2 also fail on any unhandled rejection outside
 `KNOWN_LAUNCH_REJECTIONS` (evals/worlds/packaged-first-launch.ts). A release
 that predates a fix already on `dev` fails there with `Uncaught (in promise)`

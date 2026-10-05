@@ -45,10 +45,9 @@ export function formatElapsed(ms: number): string {
 export type RowState = "done" | "running" | "pending" | "failed";
 export interface Row { label: string; state: RowState; detail?: string }
 
-export const TYPICAL: Record<string, string> = { "app-web": "about 2 min", "acme-web": "about 6 min", desktop: "about 3 min" };
+export const TYPICAL: Record<string, string> = { "app-web": "about 2 min", desktop: "about 3 min" };
 export const STEP_LABELS: Record<string, string> = {
-  checkout: "Check out", compile: "Unpack build", "boot-and-verify": "Boot and verify", "world-services": "Den, database and engine",
-  "den-pages": "Den pages", "app-modules": "App modules", "gateway-probe": "AI Gateway", desktop: "Desktop app",
+  checkout: "Check out", compile: "Unpack build", "boot-and-verify": "Boot and verify", desktop: "Desktop app",
 };
 const SECTIONS: { label: string; layers: number[] }[] = [
   { label: "Dependencies", layers: [0, 1] },

@@ -4,7 +4,7 @@
 // per bearer identity, advertises the two Connect routing tools, and records
 // every request with a SAFE identity label. Credentials never enter the log.
 //
-// It mirrors ee/apps/den-api/src/mcp/agent.ts (index shape, standard SKILL.md
+// It mirrors the shape the former control plane's MCP agent used (index shape, standard SKILL.md
 // framing, SSE-by-default transport) without importing product source.
 import { randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";

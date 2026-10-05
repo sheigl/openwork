@@ -28,7 +28,7 @@ PR-first.
    AUR packaging PR, report its URL, wait for it to merge, then rerun Release
    App with the same tag as described by the release skill.
 6. Verify the public release assets resolve, `npm view openwork-server version`
-   matches the tag, and the latest relevant Daytona snapshot run is green.
+   matches the tag, and the latest relevant checks are green.
 
 Diagnose unexpected failures instead of treating Node runtime deprecation
 warnings or the expected protected-branch rejection as release failures.

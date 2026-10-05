@@ -28,20 +28,20 @@ No OpenWork Cloud account is needed. Usage is billed by Google to the account th
 
 Use this when your organization already pays for Google Cloud and wants members to use Gemini (and Claude on Google Cloud) without handing out API keys.
 
-1. An OpenWork organization admin follows [Google Agent Platform (Vertex AI)](/ai-gateway/google-agent-platform) to enable the API, grant IAM access, and create a Google OAuth app.
+1. Enable the Vertex AI API, grant IAM access, and create a Google OAuth app in your own Google Cloud project. Follow Google's own Agent Platform documentation.
 2. In OpenWork AI Gateway, the admin adds the `google-vertex` provider for Gemini (or `google-vertex-anthropic` for Claude), enters the Google Cloud project ID and region, and picks which models members can use.
 3. Each member signs in with their own Google account from the provider's connection page.
 4. Members pick the assigned models in the OpenWork model picker.
 
-Requests are billed to your Google Cloud project, and Google IAM decides who can run inference. Self-hosted deployments first need to [enable OpenWork Gateway](/self-host/gateway).
+Requests are billed to your Google Cloud project, and Google IAM decides who can run inference.
 
 ## Option 3: Your own gateway in front of Vertex AI
 
 If your team already runs an OpenAI-compatible gateway (for example, LiteLLM) that forwards requests to Vertex AI, connect the gateway instead of Google directly:
 
 1. Get the gateway's base URL, the model names it exposes for Gemini, and a key.
-2. For yourself, add it as a custom provider in the workspace `opencode.jsonc`. For the team, an admin adds it once as a [custom LLM provider](/cloud/share-with-your-team/custom-llm-provider) in OpenWork Cloud.
-3. If the gateway issues a separate key per person, use [per-member LLM credentials](/cloud/share-with-your-team/per-member-llm-credentials).
+2. Add it as a custom provider in the workspace `opencode.jsonc`, pointing at the Vertex AI endpoint.
+3. If you run a gateway in front of Vertex AI, give each person their own key from it and share the configuration — see [Add a custom LLM](/start-here/connect-your-stack/add-a-custom-llm).
 
 See [Add a custom LLM or AI gateway](/start-here/connect-your-stack/add-a-custom-llm) for the config format.
 

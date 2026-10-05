@@ -2405,11 +2405,18 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   const settingsView = (() => {
     switch (route.tab) {
       case "general":
+        // Null when VITE_OPENWORK_FEEDBACK_URL is unset; passing undefined
+        // hides the feedback buttons in GeneralSettingsView.
+        const feedbackUrl = buildFeedbackUrl({ entrypoint: "settings" });
+        const onSendFeedback = feedbackUrl
+          ? () => platform.openLink(feedbackUrl)
+          : undefined;
+
         return (
           <GeneralSettingsView
             onNavigateTab={(tab) => navigateSettingsPath(tab)}
             developerMode={developerMode}
-            onSendFeedback={() => platform.openLink(buildFeedbackUrl({ entrypoint: "settings" }))}
+            onSendFeedback={onSendFeedback}
             onJoinDiscord={() => platform.openLink("https://discord.gg/VEhNQXxYMB")}
             onReportIssue={() => platform.openLink("https://github.com/different-ai/openwork/issues/new?template=bug.yml")}
           />

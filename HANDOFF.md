@@ -84,6 +84,5 @@ cd apps/app && bun test tests/composer-connections.test.ts tests/library-destina
 | Library routing | `apps/app/src/react-app/domains/settings/library.ts` |
 | Connect MCP → connection id | `apps/app/src/react-app/domains/session/surface/connect-capability-inventory.ts` (`toMcpEntries`) |
 | Library UI | `apps/app/src/react-app/domains/settings/pages/mcp-view.tsx`, `add-library-item-modal.tsx` |
-| Den plugin detail | `ee/apps/den-web/app/(den)/dashboard/library/plugins/[pluginId]/page.tsx` |
 | Model select | `apps/app/src/components/model-select.tsx` |
 | Model picker | `apps/app/src/react-app/domains/session/modals/model-picker-modal.tsx` |

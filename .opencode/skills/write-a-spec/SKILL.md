@@ -31,7 +31,7 @@ it decides the world you can build.
 | runs in a browser or local world with no secrets (default) | `evals/specs/<journey>.e2e.test.ts` | PR change proof, unprotected |
 | must boot the packaged desktop binary | `evals/specs/packaged-<journey>.e2e.test.ts` | packaged smoke runner |
 | needs a reviewer to reopen the *running* browser at a screenshot | add `{ tags: ["checkpoints"] }` to the `test(...)` options | protected checkpoint lane on Freestyle |
-| needs Windows and a published installer | the existing `windows-published-preview` spec only | Daytona Windows, protected |
+| needs Windows and a published installer | the existing `windows-published-preview` spec only | a Windows machine, protected |
 
 Tag `checkpoints` only when a still image cannot show what the reviewer has to
 check: an open stream, a populated workspace to explore, a state that costs

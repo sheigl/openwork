@@ -1,6 +1,12 @@
 # Desktop App Policies
 
-Desktop app policy config is loaded from OpenWork Cloud through `GET /v1/me/desktop-config` and exposed inside the desktop app through `DesktopConfigProvider`.
+Desktop app policy config was loaded from OpenWork's hosted control plane through
+`GET /v1/me/desktop-config` and exposed inside the desktop app through
+`DesktopConfigProvider`.
+
+That control plane is not part of this fork. `ManagedDesktopPolicy` only reads the
+endpoint when a Den session exists, and a Den session can no longer be established,
+so the fetch is unreachable. Ship policy through `desktop-bootstrap.json` instead.
 
 App code should read policy state through the hooks in `apps/app/src/react-app/domains/cloud/desktop-config-provider.tsx`. Do not read the provider's internal refs directly; those are only used to compare and apply newly loaded config safely.
 

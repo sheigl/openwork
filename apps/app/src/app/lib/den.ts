@@ -92,10 +92,15 @@ const ORG_SCOPE_HEADER = "x-openwork-org-id";
 const DEFAULT_DEN_TIMEOUT_MS = 12_000;
 
 export const DEFAULT_DEN_AUTH_NAME = "OpenWork User";
+// Self-hosted fork: there is no default control plane. This previously fell back
+// to https://app.openworklabs.com, so a build with no VITE_DEN_BASE_URL silently
+// pointed every Den request at OpenWork's cloud. An empty value means "no control
+// plane configured" and the Den-backed UI stays dormant; set VITE_DEN_BASE_URL (and
+// VITE_DEN_API_BASE_URL if they differ) to point at your own.
 const BUILD_DEN_BASE_URL =
   (typeof import.meta !== "undefined" && typeof import.meta.env?.VITE_DEN_BASE_URL === "string"
     ? import.meta.env.VITE_DEN_BASE_URL
-    : "").trim() || "https://app.openworklabs.com";
+    : "").trim();
 const BUILD_DEN_REQUIRE_SIGNIN =
   (typeof import.meta !== "undefined" && typeof import.meta.env?.VITE_DEN_REQUIRE_SIGNIN === "string"
     ? /^(1|true|yes|on)$/i.test(import.meta.env.VITE_DEN_REQUIRE_SIGNIN.trim())
@@ -1314,8 +1319,11 @@ export async function initializeDenBootstrapConfig(): Promise<DenBootstrapConfig
   // URL until a manual reload. The snapshot stays `unresolved`: it is a
   // recovery placeholder, not a real hosted selection, so retained
   // credentials remain quarantined until an authoritative read succeeds.
+  // This fork has no production control plane to fall back to, so the
+  // placeholder is the empty build default (no control plane) rather than
+  // HOSTED_DEFAULT_DEN_BASE_URL.
   desktopBootstrapConfig = resolveDenBootstrapConfig({
-    baseUrl: HOSTED_DEFAULT_DEN_BASE_URL,
+    baseUrl: DEFAULT_DEN_BASE_URL,
     requireSignin: BUILD_DEN_REQUIRE_SIGNIN,
   });
   desktopBootstrapResolution = "unresolved";

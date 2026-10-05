@@ -10,7 +10,6 @@ import { evalIn, assertNoLiveSecret, liveOpenAiEnabled, liveOpenAiModel, livePro
 import { resolveEvalEngine, SkipError, type Seed } from "@openwork/env";
 import type { MockAgentWorkload, MockMcpHandle } from "@openwork/labs";
 import { chatContinuity } from "./chat-continuity.ts";
-import { readDefaultDesktopPolicy } from "./desktop-policies.ts";
 
 const repoRoot = resolve(import.meta.dirname, "../..");
 
@@ -799,13 +798,10 @@ export async function modelAccessPicker(seed: Seed) {
       options: { baseURL: `${witness.url}/v1`, apiKey: "sk-personal" }, models: { [personal.modelID]: { name: "Personal witness" } } },
   } })]), { awaitPromise: true });
   if (added !== "ok") throw new Error(`Adding the personal provider failed: ${String(added)}`);
-  // Saved the way the AI Gateway dialog saves "Only models you provide".
-  const stored = await readDefaultDesktopPolicy(seed, den.admin);
-  const policy = { ...(isRecord(stored.policy) ? stored.policy : {}), allowCustomProviders: false };
-  const updated = await seed.api(den.admin, `/v1/desktop-policies/${String(stored.id)}`, {
-    method: "PATCH", body: JSON.stringify({ policyName: stored.policyName, policy }), signal: AbortSignal.timeout(30_000),
-  });
-  if (!updated.response.ok) throw new Error(`Saving model access failed: HTTP ${updated.response.status}`);
+  // Restricting members to org-provided models used to be a desktop-policy PATCH
+  // against the Den control plane. That API is gone with ee/, so the world stops
+  // here rather than pretending to enforce a policy nothing can read.
+  const policy: Record<string, unknown> = { allowCustomProviders: false };
   await seed.evalIn(app, () => { location.reload(); return true; });
   const session = await seedSessionRetry(seed, app, { title: "Only models you provide" });
   return { app, den, workspace, session, policy, personal, organization: { providerID: organizationProviderId, modelID: "organization-model" } };

@@ -272,7 +272,7 @@ creation cleanup changed after v0.18.43. Inspect your deployed API schema rather
 than assuming a moving `dev` example matches an older deployment:
 
 ```sh
-curl --fail-with-body -sS "${DEN_API_URL%/}/openapi.json" | jq '.paths | with_entries(select(.key | contains("/by-key/")))'
+curl --fail-with-body -sS "${DEN_API_URL%/}/openapi.json" | jq '.paths | with_entries(select(.key | contains("/by-key/")))'  # your own API, not OpenWork's
 ```
 
 Check for PUT entries for `teams`, `llm-providers`, `mcp-connections`,

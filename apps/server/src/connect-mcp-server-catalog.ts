@@ -27,17 +27,12 @@ export const CONNECT_DIRECT_MCP_SERVER_NAME_PREFIX = "openwork-direct-";
 export const CONNECT_MCP_APP_HOST_CAPABILITY_HEADER = "x-openwork-mcp-client-capabilities";
 export const CONNECT_MCP_APP_HOST_CAPABILITY = "mcp-app-host-v1";
 
-const BUILTIN_APP_HOST_CLOUD_ORIGINS = new Set([
-  "https://api.openworklabs.com",
-  "https://app.openworklabs.com",
-  "https://api.openwork.software",
-  "https://app.openwork.software",
-]);
+// Self-hosted fork: OpenWork's hosted MCP origins are no longer trusted. These
+// were baked-in defaults that would let a cloud endpoint be treated as an app
+// host. Left empty on purpose - add your own gateway origin if you run one.
+const BUILTIN_APP_HOST_CLOUD_ORIGINS = new Set<string>([]);
 
-const BUILTIN_APP_HOST_GATEWAY_PROXY_ORIGINS = new Map([
-  ["https://app.openworklabs.com", "https://api.openworklabs.com"],
-  ["https://app.openwork.software", "https://api.openwork.software"],
-]);
+const BUILTIN_APP_HOST_GATEWAY_PROXY_ORIGINS = new Map<string, string>([]);
 
 const indexSchema = z.object({
   schemaVersion: z.literal(CONNECT_MCP_SERVER_INDEX_SCHEMA_VERSION),

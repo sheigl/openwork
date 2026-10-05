@@ -3,17 +3,16 @@ import { mkdir, readFile, writeFile, access } from "node:fs/promises";
 import { openSync, closeSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
 import { createServer, request } from "node:http";
-import { bootAcmeWeb } from "/workspace/worlds/acme-web.ts";
+import { launchHeadlessWeb } from "/workspace/packages/world/src/headless-web.ts";
 import { chrome, localHost } from "/workspace/evals/packages/hosts/src/index.ts";
-import { signInDesktopAs, waitFor, waitUntilInteractive, evalIn } from "/workspace/evals/packages/behaviors/src/index.ts";
+import { waitUntilInteractive, evalIn } from "/workspace/evals/packages/behaviors/src/index.ts";
 import { browserScript } from "/workspace/evals/packages/cdp/src/index.ts";
 
 const root = "/opt/openwork-preview";
+/** No response can pause inside the VM, so the viewer never shows its continue button. */
+const PAUSED = { held: false, complete: false, streamCount: 0 };
 process.env.OPENWORK_WORLD_PLACE = "local";
-process.env.OPENWORK_EVAL_DEN_API_PREPARED = "1";
 process.env.pnpm_config_verify_deps_before_run = "false";
-process.env.OPENWORK_EVAL_MYSQL_URL = "mysql://root:password@127.0.0.1:3306";
-process.env.DATABASE_REDIS_URL = "redis://127.0.0.1:6379";
 process.env.DISPLAY = ":99";
 process.env.CHROME_BIN = "/opt/openwork-preview/evidence-chrome";
 process.env.GOMEMLIMIT = "512MiB";
@@ -35,50 +34,45 @@ try {
   await ready(() => access("/tmp/.X11-unix/X99").then(() => true), "display");
   service("x11vnc", ["-display", ":99", "-localhost", "-rfbport", "5900", "-forever", "-shared", "-nopw", "-quiet"], "evidence-vnc");
   service("websockify", ["--web", "/usr/share/novnc", "127.0.0.1:6080", "127.0.0.1:5900"], "evidence-viewer");
-  let held = false;
-  let complete = false;
-  let streamCount = 0;
-  let release;
-  const world = await bootAcmeWeb(stack, undefined, {
-    trigger: "Show a checkpoint demonstration",
-    prefix: "This response is paused at the saved checkpoint. ",
-    suffix: "The same response continued from the saved browser.",
-    async hold() { streamCount++; held = true; await new Promise((resolve) => { release = resolve; }); held = false; complete = true; },
+  // Everything the viewer shows runs in this VM: the app's development servers
+  // serve the checked-out sources and nothing leaves the machine.
+  const state = `${root}/state`;
+  for (const dir of ["home", "cache", "config/openwork", "config/opencode", "data/openwork", "data/opencode", "workspace"]) {
+    await mkdir(`${state}/${dir}`, { recursive: true });
+  }
+  const world = await launchHeadlessWeb({
+    repoRoot: "/workspace", name: "freestyle-evidence", state: "isolated",
+    workspace: `${state}/workspace`, browserHostSuffix: ".preview.openwork.software",
+    env: {
+      PATH: process.env.PATH,
+      pnpm_config_verify_deps_before_run: "false",
+      HOME: `${state}/home`, XDG_CONFIG_HOME: `${state}/config`, XDG_DATA_HOME: `${state}/data`, XDG_CACHE_HOME: `${state}/cache`,
+      OPENWORK_DATA_DIR: `${state}/data/openwork`, OPENWORK_ENV_STORE: `${state}/config/openwork/env.json`,
+      OPENWORK_SERVER_STATE_PATH: `${state}/data/openwork/server-state.json`,
+      OPENWORK_SERVER_TOKEN_STORE_PATH: `${state}/data/openwork/server-tokens.json`,
+      OPENCODE_CONFIG_DIR: `${state}/config/opencode`, OPENCODE_DB: `${state}/data/opencode/opencode.db`,
+      VITE_OPENWORK_POSTHOG_KEY: "", VITE_OPENWORK_SENTRY_DSN: "", VITE_DISABLE_OPENWORK_MODELS: "0",
+      OPENWORK_PORT: "8778", OPENWORK_WEB_PORT: "5178", HOST: "127.0.0.1", VITE_HOST: "127.0.0.1",
+    },
   });
-  const browser = stack.use(await chrome({ host: localHost({ repoRoot: "/workspace", log: () => {} }), name: "evidence-web", startUrl: world.web.manifest.webUrl, headless: false }));
+  stack.defer(() => world.stop());
+  const browser = stack.use(await chrome({ host: localHost({ repoRoot: "/workspace", log: () => {} }), name: "evidence-web", startUrl: world.manifest.webUrl, headless: false }));
   await waitUntilInteractive(browser);
-  await signInDesktopAs(browser, world.den.ref, world.den.admin);
-  // bootAcmeWeb already owns a fresh workspace. The desktop workspace helper
-  // waits on hash routes; app-web uses pathname routes and needs no second one.
-  await evalIn(browser, browserScript((value) => { localStorage.setItem("openwork.defaultModel", value); window.dispatchEvent(new Event("openwork.defaultModelChanged")); }, [`${world.model.providerId}/${world.model.modelId}`]));
-  // The saved default selects the model; confirm the composer shows it. (The
-  // shared selectModel helper still targets the pre-#5196 picker dialog.)
-  await waitFor(browser, browserScript((name) => document.body.innerText.includes(name), [world.model.modelName]), { timeoutMs: 30_000, label: `composer model ${world.model.modelName}` });
-  // The viewer keeps the saved Chromium tab. A direct app link would open a new
-  // document and is deliberately not presented as an exact checkpoint restore.
-  // Fast path: after a checkout, reload the saved tab and wait until the app is
-  // ready again with the same model. Vite and Next serve the checked-out sources;
-  // den-api runs once from source, so it is restarted when its sources changed.
-  async function refresh(restart) {
-    if (restart.includes("den-api")) await world.den.restartApi();
+  // The viewer keeps this tab; a direct app link would open a new document and is
+  // deliberately not presented as an exact checkpoint restore. After a checkout,
+  // reload the saved tab and wait for the app to accept requests again.
+  async function refresh() {
     await evalIn(browser, browserScript(() => { setTimeout(() => location.reload(), 0); return true; }, [])).catch(() => undefined);
     await delay(500);
     await waitUntilInteractive(browser);
-    await waitFor(browser, browserScript((name) => document.body.innerText.includes(name), [world.model.modelName]), { timeoutMs: 60_000, label: `composer model ${world.model.modelName} after refresh` });
   }
   const viewer = createServer((req, res) => {
     if (req.url === "/__evidence/refresh" && req.method === "POST") {
-      const chunks = [];
-      req.on("data", (chunk) => chunks.push(chunk));
-      req.on("end", () => {
-        let restart = [];
-        try { const body = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"); if (Array.isArray(body.restart)) restart = body.restart.filter((name) => name === "den-api"); } catch {}
-        refresh(restart).then(() => res.end(`refreshed${restart.length ? ` after restarting ${restart.join(", ")}` : ""}`), (error) => { res.writeHead(500); res.end(error instanceof Error ? error.message : String(error)); });
-      });
+      refresh().then(() => res.end("refreshed"), (error) => { res.writeHead(500); res.end(error instanceof Error ? error.message : String(error)); });
       return;
     }
-    if (req.url === "/__evidence/state") { res.setHeader("content-type", "application/json"); res.end(JSON.stringify({ held, complete, streamCount })); return; }
-    if (req.url === "/__evidence/continue" && req.method === "POST") { release?.(); res.end("continued"); return; }
+    if (req.url === "/__evidence/state") { res.setHeader("content-type", "application/json"); res.end(JSON.stringify(PAUSED)); return; }
+    if (req.url === "/__evidence/continue" && req.method === "POST") { res.end("no response is paused"); return; }
     if (req.url === "/") {
       res.setHeader("content-type", "text/html");
       res.end(`<!doctype html><html><head><title>Saved OpenWork browser</title><meta name="viewport" content="width=device-width"></head>

@@ -58,7 +58,7 @@ export async function buildProgress(sha: string, world: PreviewWorld, api: Progr
   if (!newest) return { building: false, steps: [] };
   const layer = LAYER_BY_NAME.get(newest.displayName ?? "");
   const steps = layer === "running-template"
-    ? [...await finishedSteps(api, newest.id, "build-stages.jsonl"), ...await finishedSteps(api, newest.id, "runtime-stages.jsonl")]
+    ? await finishedSteps(api, newest.id, "build-stages.jsonl")
     : [];
   return { building: true, ...(layer ? { layer } : {}), since: newest.createdAt, steps };
 }

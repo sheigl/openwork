@@ -15,7 +15,7 @@ This means:
 - **Claude Desktop, Codex, Cursor**, or any MCP-compatible tool can add OpenWork control with a single config line.
 - Your own app can do the same.
 
-> Want to control OpenWork Cloud workers and server APIs instead of the desktop UI? Check out the **OpenWork Cloud MCP** (separate package, coming soon).
+> This fork is self-hosted: there is no hosted control plane to drive remotely.
 
 ## Quick start with HandsFree
 

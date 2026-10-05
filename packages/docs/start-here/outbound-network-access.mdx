@@ -1,96 +1,133 @@
 ---
 title: "Outbound network access"
-description: "Customer IT allowlist guidance for OpenWork desktop, Den, deployment artifacts, and opt-in providers."
+description: "The destination inventory for this self-hosted OpenWork fork: what it reaches, and what breaks when a host is blocked."
 ---
 
-OpenWork works best when customer IT approves outbound access by component. The canonical machine-readable source is [`docs/enterprise/outbound-access.json`](https://github.com/different-ai/openwork/blob/dev/docs/enterprise/outbound-access.json). CI guards that file with `node scripts/check-outbound-access.mjs`; this page is the published human-readable summary.
+<Note>
+This is a **self-hosted-only fork**. OpenWork's hosted control plane has been
+removed, so most of what this page used to list is gone. The table below is
+generated from the canonical manifest,
+[`docs/enterprise/outbound-access.json`](https://github.com/different-ai/openwork/blob/dev/docs/enterprise/outbound-access.json),
+which CI guards with `node scripts/check-outbound-access.mjs`.
+</Note>
 
-## Minimum hosted desktop allowlist
+## What this fork reaches out of the box
 
-For a practical OpenWork Cloud desktop install, allow TCP 443 to these hosts:
+Very little. A default build makes **no** request to OpenWork:
 
-```text
-app.openworklabs.com
-api.app.openworklabs.com
-github.com
-release-assets.githubusercontent.com
-objects.githubusercontent.com
-registry.npmjs.org
-models.openworklabs.com
-inference.openworklabs.com
+- No model catalog. `OPENCODE_MODELS_URL` is unset, so the key is omitted entirely.
+- No control plane. There is no default Den base URL in either the app or the
+  desktop shell.
+- No analytics. The PostHog project key is not baked in; every send path in
+  `analytics.ts` returns early on an empty key.
+- No feedback or documentation link. `buildFeedbackUrl` returns `null` and the
+  Docs menu item hides itself.
+
+What remains is: GitHub (installer/updater), npm (the `npx` UI-control MCP), and
+whatever providers and MCP servers **you** configure.
+
+## Blocked if you would rather not
+
+| Host | Requirement | Why it is reached | What breaks when blocked |
+| --- | --- | --- | --- |
+| `github.com` | Required in practice unless mirrored | Desktop installer and updater release URLs, GitHub issue links, and GitHub plugin source URLs. | Desktop install/update downloads cannot start; GitHub issue and plugin-source links may not open. |
+| `release-assets.githubusercontent.com` | Required in practice unless mirrored | Current GitHub release-asset redirect target, reached after `github.com` redirects installer and updater downloads. | Downloads start from `github.com` and fail partway through. |
+| `objects.githubusercontent.com` | Required in practice for legacy/rollback | Legacy GitHub release-asset redirect target, kept so older clients and staged rollbacks keep working. | Downloads can fail partway through on those paths. |
+| `registry.npmjs.org` | Required in practice unless npm is mirrored | `npx` package resolution for `openwork-ui-mcp` and development-only MCP helper commands. | The OpenWork UI-control MCP is unavailable. |
+| `opencode.ai` | Optional | Fallback OpenCode installer command plus OpenCode auth/docs links and config schema identifiers. | Guided fallback installation and OpenCode web links fail; packaged builds still use bundled OpenCode. |
+
+For a fully isolated deployment, mirror the installer artifacts, the npm
+packages `npx` fetches, and any model catalog you use. See
+[Air-gapped deployment](/start-here/air-gapped-deployment) and
+[Installer delivery](/start-here/installer-delivery).
+
+## Everything the source contains
+
+This is the full manifest, by connection kind. Hosts listed as `fetched` or
+`subprocess` are contacted at runtime; `link-only` entries are user-facing links;
+`redirect-target` and `schema-string` entries are not fetched directly.
+
+### Fetched at runtime
+
+| Host | Requirement | Why it is reached | What breaks when blocked |
+| --- | --- | --- | --- |
+| `api.anthropic.com` | opt-in | Direct native Anthropic model requests when an Anthropic provider is configured and selected. | Configured native Anthropic models cannot generate responses. |
+| `api.app.openworklabs.com` | optional | Legacy Den API origin previously derived from app.openworklabs.com. Reached only when a deployment explicitly configures it; the server's cloud MCP origin set is now empty and the free-inference route is opt-in via OPENWORK_ENABLE_FREE_INFERENCE=1. | Nothing in a default self-hosted build; only a deployment that explicitly configures this origin is affected. |
+| `api.githubcopilot.com` | opt-in | Example remote MCP server URL for GitHub Copilot; reached only if a user configures that URL. | A GitHub Copilot MCP connection using the example URL cannot connect. |
+| `api.openai.com` | opt-in | Direct OpenAI Realtime voice, image generation, and native model requests when an OpenAI provider is configured. | Direct OpenAI voice, image, or native model requests fail for users who configured OpenAI. |
+| `api.openworklabs.com` | optional | Legacy OpenWork public API origin. Reached only by the device-code sign-in bootstrap CLI when a deployment explicitly points it at a control plane, and by hosted-config detection. | Nothing in a default self-hosted build; only a deployment that explicitly configures this origin is affected. |
+| `app.openworklabs.com` | optional | Legacy OpenWork Cloud web origin. No longer a default anywhere: apps/app and the desktop bootstrap resolve their control plane from build/env config and fall back to "no control plane configured". This literal survives only so a stale saved Cloud configuration can still be recognised as Cloud rather than silently treated as local. | Nothing in a default self-hosted build; only a deployment that explicitly configures this origin is affected. |
+| `cdn.simpleicons.org` | optional | Brand icons for MCP and extension cards when a built-in local icon is not available. | Some provider icons are missing; the app still works. |
+| `github.com` | required-in-practice | Desktop installer and updater release URLs, GitHub issue links, and GitHub plugin source URLs. | Desktop install/update downloads cannot start; GitHub issue and plugin-source links may not open. |
+| `inference.openworklabs.com` | optional | Former hosted free-inference gateway. No longer a default: apps/server/src/free-auto/settings.ts resolves an unconfigured deployment to an inert sentinel and only reaches a real origin when OPENWORK_ENABLE_FREE_INFERENCE=1 is set with an explicitly configured origin. | Nothing in a default self-hosted build; only a deployment that explicitly configures this origin is affected. |
+| `mcp.context7.com` | opt-in | Context7 MCP Quick Connect preset. | The Context7 MCP connection cannot connect when enabled. |
+| `mcp.linear.app` | opt-in | Linear MCP Quick Connect preset. | The Linear MCP connection cannot connect when enabled. |
+| `mcp.notion.com` | opt-in | Notion MCP Quick Connect preset. | The Notion MCP connection cannot connect when enabled. |
+| `mcp.sentry.dev` | opt-in | Sentry MCP Quick Connect preset. | The Sentry MCP connection cannot connect when enabled. |
+| `mcp.slack.com` | opt-in | Slack MCP connection preset and OAuth guidance. | The Slack MCP connection cannot connect when enabled. |
+| `mcp.stripe.com` | opt-in | Stripe MCP Quick Connect preset. | The Stripe MCP connection cannot connect when enabled. |
+| `opencode.ai` | optional | Fallback OpenCode installer command plus OpenCode auth/docs links and config schema identifiers. | Guided fallback OpenCode installation and OpenCode web links fail; packaged builds still use bundled OpenCode. |
+| `openrouter.ai` | opt-in | Direct native OpenRouter model requests when an OpenRouter provider is configured and selected. | Configured native OpenRouter models cannot generate responses. |
+| `us.i.posthog.com` | opt-in | Product analytics endpoint. OpenWork's PostHog project key is no longer baked in (apps/app/src/app/lib/analytics-key.ts returns ""), and every send path in analytics.ts returns early on an empty key, so a default build makes no request here. | Analytics events are dropped silently; set VITE_OPENWORK_POSTHOG_KEY to re-enable. |
+| `www.google.com` | optional | Favicon image service and the embedded browser panel's user-created new-tab page. | Favicons may be missing and the browser panel's new tab page may not load. |
+
+### Reached by a subprocess
+
+| Host | Requirement | Why it is reached | What breaks when blocked |
+| --- | --- | --- | --- |
+| `ghcr.io` | optional | Container registry for self-hosted deployments pulling their own images. | A containerised self-hosted deployment cannot pull images from GitHub Container Registry. |
+| `registry.npmjs.org` | required-in-practice | npx package resolution for openwork-ui-mcp and development-only MCP helper commands. | The OpenWork UI-control MCP is silently unavailable when npx cannot download openwork-ui-mcp. |
+
+### Redirect targets
+
+| Host | Requirement | Why it is reached | What breaks when blocked |
+| --- | --- | --- | --- |
+| `objects.githubusercontent.com` | required-in-practice | Legacy GitHub release-asset download target. GitHub has migrated to release-assets.githubusercontent.com, but allow both so older clients and any staged rollback keep working. | OpenWork downloads start from github.com and then fail partway through if GitHub serves this legacy redirect target and it is blocked. |
+| `release-assets.githubusercontent.com` | required-in-practice | Current GitHub release-asset download target reached after github.com redirects installer and updater downloads. Verified live against a real OpenWork release asset. | OpenWork downloads start from github.com and then fail partway through when the redirect target is blocked. |
+
+### Links only
+
+| Host | Requirement | Why it is reached | What breaks when blocked |
+| --- | --- | --- | --- |
+| `accounts.google.com` | opt-in | Google authorization page opened in the user's browser by the OpenWork Cloud connection flow. | Users cannot complete Google Workspace sign-in from OpenWork. |
+| `code.claude.com` | optional | Source-code comment pointing maintainers to the Claude Code plugin format reference. | No runtime effect; it is not opened or fetched by OpenWork. |
+| `discord.gg` | optional | Community link from Settings. | The Discord community link will not open. |
+| `linear.app` | optional | Sample link in the deterministic demo transcript used to exercise link rendering. | Clicking that sample Linear link fails; OpenWork functionality is unaffected. |
+| `mail.google.com` | opt-in | Gmail draft and thread links returned by OpenWork Cloud and opened in the user's browser. | Generated Gmail draft/thread links cannot open in the user's browser. |
+| `ollama.com` | optional | Ollama download and library links in local model settings. | Users cannot open Ollama download/library links from the settings UI; local Ollama traffic remains loopback. |
+| `openwork.dev` | optional | Documentation and feedback links in the command palette. | Those external support links will not open. |
+| `openworklabs.com` | optional | Documentation and feedback links. No longer a default: the roadmap component, the desktop Docs menu item, the account menu Docs entry, and the feedback URL all fall back to empty and render no link unless the operator sets the matching VITE_OPENWORK_*_URL variable. | Nothing in a default self-hosted build; only a deployment that explicitly configures this origin is affected. |
+
+### Schema identifiers (not fetched)
+
+| Host | Requirement | Why it is reached | What breaks when blocked |
+| --- | --- | --- | --- |
+| `schemas.agentskills.io` | optional | Skill index $schema identifier used for validation; OpenWork does not fetch the schema URL. | No runtime network effect. |
+
+## Opt-in providers and MCP hosts
+
+These are only needed when you enable the corresponding provider or MCP server:
+
+| Host | Requirement | Why it is reached | What breaks when blocked |
+| --- | --- | --- | --- |
+| `api.anthropic.com` | Opt-in | Direct native Anthropic requests when an Anthropic provider is configured. | Configured native Anthropic models cannot generate responses. |
+| `api.openai.com` | Opt-in | Direct OpenAI Realtime voice, image generation, and native model requests when an OpenAI provider is configured. | Direct OpenAI voice, image, or native model requests fail. |
+| `openrouter.ai` | Opt-in | Direct native OpenRouter model requests when configured. | Configured native OpenRouter models cannot generate responses. |
+| `mcp.notion.com`, `mcp.linear.app`, `mcp.sentry.dev`, `mcp.stripe.com`, `mcp.context7.com`, `mcp.slack.com` | Opt-in | Built-in MCP Quick Connect presets. | That specific MCP preset cannot connect. |
+| `api.githubcopilot.com` | Opt-in | Example remote MCP server URL; only reached if you configure that URL. | Only that MCP connection fails. |
+
+Override any provider or MCP destination with the provider's `baseURL` or the MCP
+server URL setting.
+
+## Verifying it yourself
+
+The auditor compares the manifest against the actual source, so if you add an
+outbound request without recording it, CI fails:
+
+```bash
+node scripts/check-outbound-access.mjs
 ```
 
-Common misses:
-
-- GitHub release downloads redirect away from `github.com`. Allow `release-assets.githubusercontent.com`, which is the current verified GitHub release-asset host, and `objects.githubusercontent.com`, which is kept for older clients and rollback paths.
-- `registry.npmjs.org` is used when packaged desktop builds start `npx -y openwork-ui-mcp`. If it is blocked, the desktop can still open, but UI-control MCP is unavailable.
-- `models.openworklabs.com` is the default OpenCode model catalog. Set `OPENCODE_MODELS_URL` to an approved internal mirror if the public catalog is blocked.
-
-## Desktop and local runtime destinations
-
-| Host | Requirement | Why it is reached | What breaks when blocked |
-| --- | --- | --- | --- |
-| `app.openworklabs.com` | Required for OpenWork Cloud | Hosted Cloud web origin. The desktop uses one base URL and derives Den API/MCP calls through `/api/den/...`. | Cloud sign-in, org settings, Collections, and remote workspace flows cannot load. |
-| `api.app.openworklabs.com` | Required for hosted install and OpenWork Connect | Hosted public API and OpenWork Connect MCP endpoint used by install and external-client flows. | Hosted install checks and public OpenWork Connect fail. |
-| `app.openwork.software`, `api.openwork.software` | Required only for legacy hosted configurations | Older desktop configurations may still derive Cloud and OpenWork Connect traffic from these legacy hosted origins. | Legacy configurations cannot reconcile OpenWork Connect or native MCP Apps until moved to the current hosted origins. |
-| Your self-hosted Den web origin | Required for self-hosted desktop | Replaces `app.openworklabs.com` for signed-in desktop traffic. In the single-origin shape, API and MCP use `/api/den/...` on the same origin. | The desktop cannot sign in or reach Den. |
-| Your separate Den API origin, if configured | Required only for that topology | Used by one-time install-link exchange and external MCP clients when `DEN_API_PUBLIC_URL` points at a separate origin. | Install-link handoff or external MCP clients cannot complete. |
-| `github.com` | Required in practice unless mirrored | Installer/updater release URLs and GitHub issue links. | Install/update downloads cannot start; GitHub links may not open. |
-| `release-assets.githubusercontent.com` | Required in practice unless mirrored | Current GitHub release-asset redirect target. | Downloads start from `github.com` and fail partway through. |
-| `objects.githubusercontent.com` | Required in practice for legacy/rollback | Legacy GitHub release-asset redirect target. | Older clients or rollback downloads can fail partway through. |
-| `registry.npmjs.org` | Required in practice unless npm is mirrored | `npx` package resolution for `openwork-ui-mcp` and development-only helper commands. | OpenWork UI-control MCP is unavailable. |
-| `models.openworklabs.com` | Required in practice unless mirrored | Default OpenCode model catalog passed as `OPENCODE_MODELS_URL`. | Model selection can be stale, incomplete, or unavailable. |
-| `inference.openworklabs.com` | Required for Auto | The OpenWork Gateway that serves Auto, the free starting model, before and after sign-in. | Auto is unavailable; connected providers still work. |
-| `cdn.simpleicons.org` | Optional | Provider icons when no local icon exists. | Some icons are missing. |
-| `www.google.com` | Optional | Favicon image service and embedded browser new-tab page. | Favicons or the browser panel new tab may not load. |
-| `accounts.google.com` | Opt-in, browser sign-in | Google authorization opened by the Cloud connection flow. | Google Workspace sign-in cannot complete. |
-| `us.i.posthog.com` | Optional | Product analytics when analytics are enabled. | Analytics are dropped silently. |
-| `openworklabs.com`, `openwork.dev`, `discord.gg`, `ollama.com`, `opencode.ai`, `linear.app`, `mail.google.com` | Optional or link-only | Docs, feedback, community, provider help, local model links, sample links, and generated Gmail links. | Links do not open; core app behavior is unaffected. |
-
-`code.claude.com` and `schemas.agentskills.io` appear in source or schema metadata. They are findable in the manifest, but OpenWork does not fetch them for normal runtime behavior.
-
-### Before enterprise activation
-
-An OpenWork Enterprise install that has not yet been linked to your organization makes no request outside the machine. Until the person enters the workspace address, the desktop does not probe `app.openworklabs.com` for runtime configuration, does not send analytics to `us.i.posthog.com`, does not check `github.com` for updates or downloads (the one exception is an install whose architecture does not match the machine, which looks up the correct download), does not fetch OpenWork Cloud inventory, and on Windows and Linux does not download the Chromium spellchecker dictionary from `redirector.gvt1.com`. The first outbound request goes to the workspace address that was entered. Analytics and update checks start only after activation completes and your desktop policy has been read once.
-
-## Den runtime destinations
-
-Approve Den separately from desktop clients. A self-hosted Den behind VPN or inside Kubernetes uses the server network, not the user's laptop network.
-
-| Destination | Requirement | Why it is reached | What breaks when blocked |
-| --- | --- | --- | --- |
-| Your MySQL-compatible database host | Required | Den control-plane state. | Den cannot start, migrate, sign users in, or store organization state. |
-| Your SMTP host or Resend | Optional | Transactional email when configured. | Invites, lifecycle, or notification email cannot send. |
-| `api.github.com`, `raw.githubusercontent.com` | Opt-in | GitHub-hosted plugin import and sync. | Plugin import cannot inspect repos or download manifests, skills, commands, agents, or MCP configs. |
-| Google Workspace hosts | Opt-in | Google OAuth and APIs. | Google sign-in or Workspace actions fail. |
-| Provider and MCP hosts | Opt-in | Calls to enabled model providers, OAuth/token endpoints, and MCP servers. | Only the enabled provider or MCP connection fails. |
-
-For Google Workspace, Den calls `oauth2.googleapis.com` for token exchange and
-refresh, `www.googleapis.com` for profile, Calendar, and Drive APIs, and
-`gmail.googleapis.com` for Gmail APIs. These are Cloud server destinations, not
-local Google Workspace API requirements on the desktop. The client manifest
-keeps only the browser destinations `accounts.google.com` and `mail.google.com`.
-Set up Google through [Connect your services](/start-here/connect-your-stack/connect-services#google-workspace),
-not local OAuth environment variables.
-
-## Deployment and image-pull destinations
-
-| Host | Requirement | Why it is reached | What breaks when blocked |
-| --- | --- | --- | --- |
-| `ghcr.io` | Required unless mirrored | OpenWork Helm chart and container images. | Kubernetes cannot pull the chart or `openwork-den-api`, `openwork-den-web`, and optional Gateway image `openwork-inference` (retained repository name). |
-| Internal registry mirror | Required when public GHCR is blocked | Your mirrored chart and images. | Installs and upgrades fail until the mirror has the requested version. |
-
-For fully isolated deployments, also mirror installer artifacts, npm packages used by `npx`, and the model catalog. See [Air-gapped deployment](/start-here/air-gapped-deployment) and [Installer delivery](/start-here/installer-delivery).
-
-## Opt-in provider and connection hostnames
-
-These hosts are only needed when the corresponding feature, provider, connection, or import path is enabled:
-
-| Feature group | Hostnames | What breaks when blocked |
-| --- | --- | --- |
-| OpenAI direct features | `api.openai.com` | Direct OpenAI Realtime voice and image-generation features fail for users who configured OpenAI. |
-| Google Workspace through Cloud | Browser: `accounts.google.com`, `mail.google.com`. Den: `oauth2.googleapis.com`, `www.googleapis.com`, `gmail.googleapis.com`. | Browser sign-in and Gmail links, or Cloud token refresh and Workspace actions, fail on the component where access is blocked. |
-| Built-in MCP presets | `mcp.notion.com`, `mcp.linear.app`, `mcp.sentry.dev`, `mcp.stripe.com`, `mcp.context7.com`, `mcp.slack.com` | That specific MCP preset cannot connect. |
-| Example or custom MCP URLs | `api.githubcopilot.com` or the customer-configured MCP URL | Only the connection that points at that URL fails. |
-
-The JSON manifest remains the ownership point for exact host metadata, requirement level, override name, and blocked effect. Use this page for review conversations and the JSON file for automation.
+The JSON manifest remains the ownership point for exact host metadata,
+requirement level, override name, and blocked effect. Use this page for review
+conversations and the JSON file for automation.

@@ -133,7 +133,7 @@ Anonymous report, JSON, and image requests must redirect to Vercel Authenticatio
 ## Interactive Freestyle previews
 
 When the evidence report for a PR push is published, the **Evidence review** workflow
-builds that commit's `app-web` and `acme-web` snapshots in the background, so
+builds that commit's `app-web` snapshot in the background, so
 **Launch in Freestyle** is usually ready at the first click. Otherwise the first
 launch of a commit and world builds its snapshot after the request returns (`202`),
 within the function's 800-second budget. The page polls `GET /r/<id>/launch?world=…`,
@@ -189,8 +189,7 @@ pnpm world down preview-app-web
 
 World teardown deletes its owned VM, with a resource ledger for interrupted
 teardown. The access URL is a secret world output. The existing world CLI supports
-`app-web` and the co-located `acme-web` demo; other desktop recipes retain their
-existing placements.
+`app-web`; other desktop recipes retain their existing placements.
 
 In the review page, **Desktop only (signed out)** selects the distinct `desktop`
 Freestyle snapshot: Electron, its local engine and internal renderer, XFCE, and

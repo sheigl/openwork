@@ -5,7 +5,7 @@ keywords: ["connect services", "connectors", "Gmail", "Google Calendar", "Google
 ---
 
 <Info>
-**OpenWork Cloud organization setup.** This path requires an OpenWork Cloud sign-in and an organization that has made services available to you. To stay local, keep using OpenWork for free and [add a custom MCP server](/start-here/connect-your-stack/add-an-mcp-server) to your workspace. Admins can manage team connections with [Connectors](/cloud/share-with-your-team/shared-mcp-connections).
+There is no organization layer in this fork, so there is no difference between "local" and "managed" services. Every deployment configures the connections it wants; to share one, copy the configuration.
 </Info>
 
 Use **Settings › Library** (the **Connectors** filter) for services your organization makes available,
@@ -149,11 +149,11 @@ tools and remain subject to that provider's account, plan, and approval rules.
   connector, instantiated per user with that user's account.
 - The **MCP Gateway** is the hosted endpoint that lets external MCP clients
   use capabilities from an OpenWork organization. See
-  [OpenWork MCP Gateway](/cloud/run-in-the-cloud/cloud-mcp).
+  your own MCP server.
 - **Add an MCP server** is the advanced path for a custom or local server that
   your organization does not provide through Connect.
 
 If you are building a custom integration, continue with
 [Add an MCP server](/start-here/connect-your-stack/add-an-mcp-server). If you
 are an organization admin, see
-[Sharing MCP connections with your team](/cloud/share-with-your-team/shared-mcp-connections).
+Copying a configuration to another deployment — see [Share your setup](/start-here/do-work-with-it/share-your-setup).

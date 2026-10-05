@@ -1,6 +1,6 @@
 export const OpenWorkDownloads = () => {
-  const STABLE_RELEASES_URL = "https://api.github.com/repos/different-ai/openwork/releases?per_page=30";
-  const ALPHA_RELEASE_URL = "https://api.github.com/repos/different-ai/openwork/releases/tags/alpha-macos-latest";
+  const STABLE_RELEASES_URL = "https://api.github.com/repos/sheigl/openwork/releases?per_page=30";
+  const ALPHA_RELEASE_URL = "https://api.github.com/repos/sheigl/openwork/releases/tags/alpha-macos-latest";
   const GITHUB_HEADERS = { Accept: "application/vnd.github+json" };
   const dateFormatter = new Intl.DateTimeFormat("en-US", {
     month: "short",

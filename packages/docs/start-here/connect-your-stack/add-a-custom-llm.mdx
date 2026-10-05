@@ -69,16 +69,18 @@ Add one entry under `models` for every model ID the endpoint exposes.
 
 For Ollama, the built-in `Settings > Ollama` screen writes this config for you. See [Use local models](/start-here/connect-your-stack/use-local-models).
 
-## Share a provider with your team
+## Share a provider with several people
 
-If several people need the same provider, have an OpenWork Cloud admin add it once instead of passing keys around:
+There is no organization layer in this fork, so there is no "admin adds it once and
+everyone sees it". Two options:
 
-- [Managed LLM provider](/cloud/share-with-your-team/managed-llm-provider): a catalog provider with one shared org key.
-- [Custom LLM provider](/cloud/share-with-your-team/custom-llm-provider): any OpenAI-compatible endpoint, including your own gateway, entered as a base URL plus model IDs.
-- [Per-member LLM credentials](/cloud/share-with-your-team/per-member-llm-credentials): one provider, a separate key per member (for example, LiteLLM virtual keys).
-- [OpenWork AI Gateway](/ai-gateway/overview): route providers through OpenWork with per-team model access, limits, and usage tracking.
+- **A gateway with its own auth.** Point the provider's `baseURL` at a gateway you
+  operate (LiteLLM, Bifrost, or your own) that issues per-person keys. Everyone
+  configures the same base URL and pastes their own key.
+- **A shared config file.** `opencode.jsonc` is plain text. Keep it in version
+  control, drop in a key reference or a gateway URL, and hand it to whoever needs it.
 
-Org providers sync to members' apps automatically. Members can check their status under `Settings > AI Providers > Cloud providers`. Admins can also block locally added providers with [desktop policies](/cloud/share-with-your-team/desktop-policies) so everyone uses the approved setup.
+See [Share your setup](/start-here/do-work-with-it/share-your-setup).
 
 ## FAQ
 
@@ -87,7 +89,7 @@ Org providers sync to members' apps automatically. Members can check their statu
     Yes. OpenRouter is in the provider catalog: open `Settings > AI Providers > Connect provider`, search for OpenRouter, and paste your key.
   </Accordion>
   <Accordion title="Can I use my company's own AI gateway?">
-    Yes, if it exposes an OpenAI-compatible endpoint. Add it with Option 2 for yourself, or ask an admin to add it once as a [custom LLM provider](/cloud/share-with-your-team/custom-llm-provider) for the team.
+    Yes, if it exposes an OpenAI-compatible endpoint. Add it with Option 2. To share it, run a gateway in front of it and give everyone the gateway URL plus their own key.
   </Accordion>
   <Accordion title="Where does OpenWork store my API key?">
     Keys entered in `Connect provider` are stored by the local OpenCode engine on your computer. Values saved in `Settings > Environment` stay on this device. Org-managed keys are stored in OpenWork Cloud and synced to the workspaces that are allowed to use them.

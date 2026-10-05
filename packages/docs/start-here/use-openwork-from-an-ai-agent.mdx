@@ -1,70 +1,95 @@
 ---
 title: "Use OpenWork from an AI agent"
 sidebarTitle: "For AI agents"
-description: "Exact commands for Claude Code, Codex, Cursor, ChatGPT, and other agents to install OpenWork, set it up for a team, or connect the OpenWork MCP Gateway."
+description: "Exact commands for Claude Code, Codex, Cursor, and other agents to install and run openwork-server, the self-hosted OpenWork backend."
 ---
 
-Point your agent at [openworklabs.com/llms.txt](https://openworklabs.com/llms.txt) and it can install OpenWork, set it up for a team, or connect OpenWork to itself. This page has the same steps.
+Point your agent at this page and it can install and run OpenWork for you.
 
 <Warning>
-Don't use `npx openwork` or `npm install openwork`. The npm package named `openwork` is a different project.
+Don't use `npx openwork` or `npm install openwork`. The npm package named `openwork` is a different project. The server package is **`openwork-server`**.
 </Warning>
 
-## Just me: install the desktop app
+<Note>
+This is a self-hosted-only fork. The hosted OpenWork Cloud, its web app, its
+team/organization setup, and the `api.openworklabs.com/mcp/agent` MCP Gateway
+were removed from the project. There is no hosted MCP endpoint to connect an
+agent to, and no hosted download page. What follows is entirely self-hosted.
+</Note>
 
-Free, no account needed.
+## Run the server
+
+```sh
+npm install -g openwork-server
+openwork-server
+```
+
+It writes configuration to `~/.config/openwork`, listens on `127.0.0.1:8787`,
+and prints a URL. Open it and you are signed in — there is no account to
+create.
+
+Then give the agent an authorized workspace root and a task. A good first one:
+
+```text
+Use OpenWork to summarize the folder /home/me/projects/thing.
+```
+
+See [Self-host](/start-here/self-host) for the full picture, including how to
+run the browser UI instead of the desktop app.
+
+## Configure a model
+
+The server ships no model catalog and no default provider. Have the agent set
+one up:
+
+| Goal | Ask for |
+|---|---|
+| Local models | "Set up Ollama as the model provider." |
+| Your own gateway | "Configure the provider base URL to point at my LiteLLM instance." |
+| An API key | "Add my Anthropic API key as a provider." |
+
+The pages are [Use local models](/start-here/connect-your-stack/use-local-models),
+[Add a custom LLM](/start-here/connect-your-stack/add-a-custom-llm), and
+[Add an Anthropic API key](/start-here/connect-your-stack/add-anthropic-api-key).
+
+## Install the desktop app
+
+The desktop app is a separate download. It connects to a running server, so
+start the server first.
 
 | OS | Install |
 |---|---|
 | macOS (Homebrew) | `brew install --cask openwork` |
-| macOS | [Apple Silicon](https://openworklabs.com/download/mac-arm64) or [Intel](https://openworklabs.com/download/mac-x64) `.dmg` |
-| Windows | [x64](https://openworklabs.com/download/win-x64) or [ARM64](https://openworklabs.com/download/win-arm64) `.exe` |
-| Linux | [x64](https://openworklabs.com/download/linux-x64) or [ARM64](https://openworklabs.com/download/linux-arm64) `.AppImage` |
+| macOS, Windows, Linux | Download the build for your platform from [GitHub releases](https://github.com/different-ai/openwork/releases) |
 
-These links always point to the latest stable release. Then [run your first task](/desktop-app/first-task).
+Then [run your first task](/desktop-app/first-task).
 
-## My team: set up OpenWork Cloud
+## Skills
 
-1. [Sign up](https://app.openworklabs.com?mode=sign-up) and name your team. That creates your organization. The first 5 seats are free.
-2. Invite teammates in `Members` > `Add member`.
-3. Share models in `AI Gateway` > `AI Providers` > `Add provider`.
-4. Share a skill: **Manage › Plugins › Create a plugin**, add the skill, then add the team under **Who can use it**.
-5. Everyone installs the desktop app and clicks `Joining a team? Sign in`.
+Skills are directories on disk. An agent can write them for you — see
+[Create a skill from chat](/start-here/do-work-with-it/create-a-skill-from-chat)
+— and copy them between machines with
+[Share your setup](/start-here/do-work-with-it/share-your-setup). Skills follow
+the [Agent Skills](https://schemas.agentskills.io) `SKILL.md` convention, so an
+agent that already understands that format can write one without further
+instruction.
 
-Full walkthrough: [Team quickstart](/cloud/team-quickstart). For a headless, agent-run setup, follow [start.md](https://openworklabs.com/start.md). It uses the `openwork-bootstrap` CLI from `https://openworklabs.com/install.sh`, which needs Node.js 20+ and doesn't install the desktop app.
+## Connect an MCP server
 
-## Inside my agent: connect the MCP Gateway
+MCP servers are configuration, not an account. Have the agent add one:
 
-Server URL: `https://api.openworklabs.com/mcp/agent`. Sign-in uses OAuth in the browser. You need an OpenWork Cloud account.
-
-```sh
-# Claude Code
-claude mcp add --transport http openwork https://api.openworklabs.com/mcp/agent
-
-# Codex
-codex mcp add openwork --url https://api.openworklabs.com/mcp/agent
-codex mcp login openwork
-
-# Gemini CLI
-gemini mcp add --transport http openwork https://api.openworklabs.com/mcp/agent
-
-# OpenCode
-opencode mcp add openwork --url https://api.openworklabs.com/mcp/agent
-opencode mcp auth openwork
+```text
+Add the Context7 MCP server (https://mcp.context7.com) to OpenWork.
 ```
 
-Other clients: [Connect OpenWork MCP](/start-here/connect-openwork-mcp). It's working when your agent lists the `search_capabilities` and `execute_capability` tools.
+See [Add an MCP server](/start-here/connect-your-stack/add-an-mcp-server) and
+[Connect services](/start-here/connect-your-stack/connect-services).
 
-## Agent skills and machine-readable files
+## What an agent should not do
 
-For approved private-alpha organizations, your agent can also configure the Slack assistant. Use the [OpenWork in Slack guide](/slack/overview) and its copyable setup prompt. An administrator installs the bot; every member authorizes their own Slack connection.
-
-| Resource | URL |
-|---|---|
-| Install skill | [install-openwork](https://openworklabs.com/.well-known/agent-skills/install-openwork/SKILL.md) |
-| MCP skill | [connect-openwork-mcp](https://openworklabs.com/.well-known/agent-skills/connect-openwork-mcp/SKILL.md) |
-| Team skill | [set-up-openwork-team](https://openworklabs.com/.well-known/agent-skills/set-up-openwork-team/SKILL.md) |
-| Slack assistant setup (private alpha) | [set-up-openwork-slack](https://openworklabs.com/.well-known/agent-skills/set-up-openwork-slack/SKILL.md) |
-| Skills index | [agent-skills/index.json](https://openworklabs.com/.well-known/agent-skills/index.json) |
-| MCP server card | [mcp/server-card.json](https://openworklabs.com/.well-known/mcp/server-card.json) |
-| OpenAPI | [openapi.json](https://api.openworklabs.com/openapi.json) |
+- **Do not point OpenWork at a hosted OpenWork endpoint.** There isn't one.
+- **Do not bind the server to `0.0.0.0`.** It authorizes anything that reaches
+  the port. Loopback, or your own authenticating proxy.
+- **Do not set `OPENWORK_ENABLE_FREE_INFERENCE=1` without
+  `OPENWORK_FREE_INFERENCE_ORIGIN`.** The free route has no default origin and
+  makes no request unless you name one.

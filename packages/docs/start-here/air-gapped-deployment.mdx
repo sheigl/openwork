@@ -26,7 +26,7 @@ Use this checklist only when the goal is a fully isolated OpenWork deployment, n
 - Mirror all enabled images into an internal registry, including `openwork-den-api`, `openwork-den-web`, and `openwork-inference` if OpenWork Gateway or the retained legacy inference component is enabled. Gateway keeps this image name; do not substitute the separate `den-gateway` Web proxy.
 - Configure Helm image repositories and chart installation to use the internal registry. The public `ghcr.io` path is only needed when you are not mirroring the chart and images.
 
-For Gateway, mirror matching images from the capability-version-1 release rather than older stable images with new chart values. Follow [Gateway deployment configuration](/self-host/gateway) and the [safe upgrade procedure](/self-host/gateway-upgrade), including schema migration before runtime rollout. Gateway is GA for admins in every organization when configured, with no organization flag or platform-admin grant. Deployment `GATEWAY_ENABLED` and `deploymentCapabilities.aiGateway` checks still apply, as do admin permissions, credential controls, and network requirements.
+OpenWork Gateway was part of the hosted control plane and is not part of this fork. If you run a gateway of your own (LiteLLM, Bifrost, or similar), it is just another outbound host — mirror it alongside any other external dependency.
 
 ### Installer artifacts
 
@@ -39,14 +39,13 @@ See [Installer delivery](/start-here/installer-delivery) for the exact filenames
 
 ### Desktop runtime dependencies
 
-- Point `OPENCODE_MODELS_URL` at an internal mirror of the model catalog. The default catalog is `https://models.openworklabs.com/`.
+- If you want a model catalog at all, point `OPENCODE_MODELS_URL` at an internal mirror. There is **no default catalog** in this fork: unset means the key is omitted entirely, and managed OpenCode falls back to its own built-in list.
 - The packaged desktop can start the UI-control MCP with `npx -y openwork-ui-mcp`. In a fully isolated environment, provide an internal npm registry or npm mirror that can serve that package to `npx`. OpenWork does not currently document a separate OpenWork-specific registry override for this package; use standard npm configuration for the runtime account.
 - Disable, mirror, or manage desktop updates and GitHub release assets through your internal release process. Do not assume a built-in updater mirror setting unless it has been verified for the desktop release you ship.
 
 ### Feature dependencies
 
 - Optional providers, MCP servers, OAuth identity providers, and email services are unavailable unless they are internally reachable and approved. Examples include Google Workspace, Microsoft 365, GitHub plugin import, OpenRouter/OpenAI, Slack/Notion/Linear/Sentry/Stripe MCP presets, SMTP, and Resend.
-- If you enable the GitHub connector, approve the exact GitHub API/webhook paths or mirror the workflow it needs. Start with the [GitHub connector Helm guide](/start-here/github-connector-helm).
 - If you enable internal MCP URLs, review the private-network SSRF policy in [Private network deployment](/start-here/private-network-deployment). Enabling private MCP URLs is a trust decision, not an air-gap requirement.
 
 ### Security and diagnostics

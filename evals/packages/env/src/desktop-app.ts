@@ -6,7 +6,7 @@ import { desktop, retainedDesktop } from "@openwork/hosts";
 import { liveSharedProductionStateEnv } from "@openwork/hosts";
 import { progress, trackResource } from "@openwork/world";
 import type { AppReadiness, DesktopHandle, DesktopRelease, Host, InstalledProductionDesktopState, RetainedDesktopHandle } from "@openwork/hosts";
-import type { Den } from "./den.ts";
+import type { Den } from "./den-contract.ts";
 import type { Place } from "./place.ts";
 
 const steps = progress();

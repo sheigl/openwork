@@ -639,8 +639,9 @@ function readOpenWorkInferenceBaseUrl(providerConfig: JsonRecord): string | null
   return api ? api.replace(/\/api\/v1\/?$/, "") : null;
 }
 
-// Ported from ee/apps/den-api/src/llm/cloud-provider-materialization.ts.
-// Keep local: the open-source server must never depend on ee modules.
+// Originally ported from OpenWork's hosted control plane (ee/apps/den-api),
+// which is not part of this self-hosted fork. Kept local on purpose: the
+// server must never depend on cloud modules.
 function providerEnvEntries(provider: DenProviderConnection): EnvEntry[] {
   const entries: EnvEntry[] = [];
   const envNames = readProviderEnvNames(provider.providerConfig);

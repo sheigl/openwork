@@ -255,7 +255,9 @@ export type SessionPageProps = {
   hasUsableModel?: boolean;
   providers?: ProviderListItem[];
   mcpConnectedCount: number;
-  onSendFeedback: () => void;
+  // Optional: unset when no feedback destination is configured, which hides the
+  // feedback entries in the sidebar account menu.
+  onSendFeedback?: () => void;
   onOpenSettings: () => void;
   onOpenExtensions: () => void;
   sidebar: SessionPageSidebarProps;

@@ -7,10 +7,10 @@ Automation's lifetime:
 
 - Desktop creation produces a `desktop` Automation and continues to use the
   authenticated desktop runner introduced by the existing Automations work.
-- OpenWork Web and Cloud Chat creation produce a `cloud` Automation. Den
-  schedules the occurrence, wakes the owner's existing OpenWork Cloud container
-  when it is stopped, and runs a native OpenWork thread headlessly inside that
-  container.
+- The `cloud` placement existed for OpenWork Web and Cloud Chat: the hosted
+  control plane scheduled the occurrence and woke the owner's cloud container.
+  That placement is gone with the control plane, so only the `desktop` placement
+  is created in this fork.
 
 Desktop and OpenWork Web share one Automations surface in the app: the same
 list, editor, detail, run history, receipts, and in-chat proposal card. The
@@ -77,7 +77,7 @@ run-now, or archive control and routes management to OpenWork Web or Desktop.
 Source-contract tests pin the shared app surface: one deployment gate for both
 runtimes, runtime-derived placement on create, and the desktop-only runner.
 
-The deployment-shaped Daytona journey—stop a real user's container, let a due
-occurrence wake it, execute against live model and Connect configuration, then
-observe idle shutdown again—remains required for the production rollout and
-merge decision. It is intentionally not claimed by local or mocked proof.
+The deployment-shaped cloud journey described here—stopping a real user's
+container, letting a due occurrence wake it, executing against live model and
+Connect configuration, then observing idle shutdown again—required a Daytona
+cloud sandbox and no longer applies to this self-hosted fork.

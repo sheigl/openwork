@@ -32,11 +32,9 @@ pnpm release:review         # sanity: placeholders intact, opencode pin present
    `apps/{app,desktop,server}/package.json` in the CI workspace only. That is
    what electron-builder, `app.getVersion()`, the Vite renderer bundle, and
    the `openwork-server` npm publish all read.
-5. `publish-release` flips the draft public once required assets exist. From
-   that moment den-api serves the new version to orgs: it reads published
-   releases from the GitHub Releases API at runtime
-   (`ee/apps/den-api/src/desktop-releases.ts`) — prereleases and drafts are
-   excluded, so a rollback demotion removes a version immediately.
+5. `publish-release` flips the draft public once required assets exist. Clients
+   read published releases from the GitHub Releases API directly; prereleases and
+   drafts are excluded, so a rollback demotion removes a version immediately.
 
 ## Prerequisites
 
@@ -78,7 +76,7 @@ a normal reviewed PR and close the loop there.
 
 ## Recovery and reruns
 
-- **Rerun an existing tag** (infra failure, replay AUR/Daytona):
+- **Rerun an existing tag** (infra failure, replay AUR):
 
   ```bash
   gh workflow run "Release App" --repo different-ai/openwork -f tag=vX.Y.Z
@@ -109,9 +107,9 @@ pnpm release:rollback --bad vX.Y.Z --execute
 Always pin `--bad` when executing: after a successful rollback the *good*
 release is Latest, so a bare re-run would select it as bad. The script
 re-points Latest, demotes the bad release to prerelease, and prepends a
-warning to its notes. Demotion also removes the version from den-api's
-published list at runtime (it excludes prereleases), so org installs and the
-update gate stop offering it within the cache window.
+warning to its notes. Demotion also removes the version from the published
+list every client reads (prereleases and drafts are excluded), so installs and
+the update gate stop offering it within the cache window.
 
 ### 2. Reissue for updated clients
 
@@ -146,8 +144,6 @@ npm publish. It does **not** require:
   release failures. AUR publishing renders the committed
   `packaging/aur` template (pkgver=0.0.0) with the real version + checksums
   in the CI workspace and pushes only to the AUR remote.
-- `Build + Push Daytona Snapshot` — snapshots are rebuildable afterwards by
-  re-running the workflow with the same tag.
 
 ## Verification checklist
 
@@ -160,8 +156,6 @@ gh release view vX.Y.Z --repo different-ai/openwork   # published, not draft
 - Asset count looks right (macOS + Linux + Windows + updater `latest*.yml`
   manifests — the desktop updater 404s until the manifests are published)
 - `npm view openwork-server version` shows the new version
-- `curl -s https://api.openworklabs.com/v1/app-version` lists the new version
-  once den-api's cache refreshes (≤5 minutes)
 
 ## Where versions live now
 
@@ -171,28 +165,13 @@ gh release view vX.Y.Z --repo different-ai/openwork   # published, not draft
 | What's the latest? | `gh release view --json tagName` |
 | What commit is vX.Y.Z? | `git rev-parse vX.Y.Z` |
 | What version is this checkout? | `git describe --tags` (package.json says `0.0.0-dev` on purpose) |
-| Oldest supported desktop version? | `MIN_SUPPORTED_DESKTOP_VERSION` — committed policy in `scripts/release/generate-desktop-versions.mjs` |
+| Oldest supported desktop version? | `MIN_SUPPORTED_DESKTOP_VERSION`, pinned where the updater reads it |
 
-`ee/apps/den-api/src/generated/desktop-versions.ts` is a cold-start/offline
-fallback snapshot only; refresh it occasionally with
-`node scripts/release/generate-desktop-versions.mjs --version <latest>`.
-
-One file does carry a released version by design: the pull-only evaluation
-stack `packaging/docker/docker-compose.eval.yml` pins den-api and den-web by
-`<version>@<digest>`, and the docs download it by commit sha + checksum. After
-`Publish EE Artifacts` has pushed a stable tag's images, bump the pins on a
-branch from `dev` (the sequence #4756 used for 0.18.46):
-
-```bash
-V=X.Y.Z
-API=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' ghcr.io/different-ai/openwork-den-api:$V)
-WEB=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' ghcr.io/different-ai/openwork-den-web:$V)
-node scripts/release/pin-compose-images.mjs pin --version $V --digest openwork-den-api=$API --digest openwork-den-web=$WEB
-git commit -S -s -am "fix(packaging): pin the compose evaluation stack to the $V images"
-node scripts/release/pin-compose-images.mjs docs --commit $(git rev-parse HEAD)
-git commit -S -s -am "docs: point the compose download at the $V pin"
-node scripts/release/check-compose-pins.mjs      # {"ok":true,...} once the tag exists
-```
+`openwork-server` publishes to npm; `git tag --list 'v*'` is the only version
+source. The removed Den images and their compose-pin tooling
+(`scripts/release/pin-compose-images.mjs`, `check-compose-pins.mjs`, and
+`packaging/docker/docker-compose.eval.yml`) were the cloud control plane's
+release path and no longer exist.
 
 `check-compose-pins.mjs` fails when a pinned tag lags the highest stable `v*`
 tag, when a doc checksum does not match the compose file, or when the two docs
@@ -209,14 +188,14 @@ of cutting it.
 | `verify-release` fails monotonicity | manual tag lower than an existing release | choose a version above the current highest stable tag |
 | `release:review` fails placeholder check | someone committed a real version into package.json | restore `0.0.0-dev` — CI stamps versions from the tag |
 | Desktop app shows updater 404 for the new version | tag exists but the release is still a draft mid-run | wait for `Publish GitHub Release`; self-heals |
-| Release run red only on AUR / Daytona | external channel failure | release still publishes; rerun with the same tag when the channel recovers |
+| Release run red only on AUR | external channel failure | release still publishes; rerun with the same tag when the channel recovers |
 | All `electron-linux-*` fail compiling a native module | a raw-V8 native addon meeting new Electron headers under GCC | keep native deps converged on one N-API-based major across the whole workspace (see #3561/#3563) |
 | Windows legs fail in afterPack with `Missing staged MCP runtime package` | asar path-separator mismatch | fixed — `normalizeAsarEntryPath` in `electron-after-pack.cjs` |
 
 ## History
 
 - **2026-08**: releases became commit-free (tags are the only version source;
-  CI stamps the workspace; den-api reads published releases at runtime; AUR
+  CI stamps the workspace; clients read published releases at runtime; AUR
   renders a committed template). Previously every release required a version
   bump commit, a dev backfill PR, and an AUR packaging PR.
 - **2026-08-05** (v0.18.15/v0.18.16): three releases red since the Electron

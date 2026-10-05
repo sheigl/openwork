@@ -18,11 +18,9 @@ export type { StepRecord, TestOutcome, TraceEntry } from "@openwork/test-evidenc
 export { test, CHECKPOINTS_TAG } from "./fixture.ts";
 export * from "@openwork/env";
 export * from "./brief.ts";
-export * from "./daytona-witness.ts";
 export * from "./app-web-preview-witness.ts";
 export * from "./eventually.ts";
 export * from "./link.ts";
-export * from "./self-host.ts";
 export * from "./spec/index.ts";
 export * from "./state.ts";
 

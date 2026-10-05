@@ -54,10 +54,6 @@ export async function bootAppWebWorld(
   const selectedEnv = appWebEnvironment(env);
   const lifetimeMinutes = options.lifetimeMinutes ?? 120;
   if (!Number.isInteger(lifetimeMinutes) || lifetimeMinutes < 10 || lifetimeMinutes > 1430) throw new Error("app-web lifetime must be 10-1430 minutes.");
-  if (options.place === "daytona" && selectedEnv.OPENWORK_DEV_DEN_PROXY_TARGET !== undefined
-    && selectedEnv.OPENWORK_DEV_DEN_PROXY_TARGET !== "https://app.openworklabs.com") {
-    throw new Error("Remote app-web supports only https://app.openworklabs.com as its Den proxy target.");
-  }
   const runtimeName = `${receiptName("preview-app-web", resolveStage(env))}-${randomUUID().slice(0, 8)}`;
   if (options.place === "freestyle") {
     if (!options.ref) throw new Error("Freestyle requires a full pushed source SHA.");

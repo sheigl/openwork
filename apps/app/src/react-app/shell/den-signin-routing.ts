@@ -17,9 +17,10 @@ export function signedInRoute(
  * Where the Den sign-in gate sends the user. Pure so the routing table can be
  * tested without rendering the shell.
  *
- * A desktop prepared by an agent-first install (`openwork-bootstrap cloud
- * bootstrap-workspace --prepare-desktop`) holds a provisional workspace with no
- * owner yet, so there is nobody to sign in as. Its "Setup complete" page, whose
+ * A desktop prepared by an agent-first install holds a provisional workspace
+ * with no owner yet, so there is nobody to sign in as. (The install path that
+ * used to produce that bootstrap — `openwork-bootstrap cloud bootstrap-workspace
+ * --prepare-desktop` — was a hosted control-plane CLI and has been deleted.) Its "Setup complete" page, whose
  * only actions are claiming the workspace or pasting a sign-in code, is shown
  * even when the build forces sign-in (cloud and enterprise). It exposes no
  * workspace data, so it does not weaken the sign-in requirement.

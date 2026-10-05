@@ -155,7 +155,9 @@ if (manageEngine) {
     OPENWORK_SERVER_URL: serverUrl,
     OPENWORK_SERVER_TOKEN: config.token,
     OPENCODE_CONFIG: runtimeConfigPath,
-    OPENCODE_MODELS_URL: opencodeModelsUrl,
+    // Omitted entirely when no catalog is configured, so the engine never
+    // receives OPENCODE_MODELS_URL and keeps its bundled model list.
+    ...(opencodeModelsUrl ? { OPENCODE_MODELS_URL: opencodeModelsUrl } : {}),
   };
   const engineSpawnTemplate: EngineSpawnTemplate = {
     bin: process.env.OPENWORK_OPENCODE_BIN,

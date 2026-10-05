@@ -10,12 +10,13 @@ const scanRoots = [
   "apps/desktop/electron",
   "apps/server/src",
   "apps/app/src",
-  "packages/openwork-bootstrap/bin",
 ];
 
 const requiredFields = ["host", "kind", "components", "purpose", "requirement", "blockedEffect", "override"];
 const allowedKinds = new Set(["fetched", "redirect-target", "subprocess", "link-only", "schema-string"]);
-const allowedRequirements = new Set(["required", "required-for-cloud", "required-in-practice", "optional", "opt-in"]);
+// "required-for-cloud" was dropped with the hosted control plane: there is no cloud
+// mode left for a host to be required by.
+const allowedRequirements = new Set(["required", "required-in-practice", "optional", "opt-in"]);
 const urlHostPattern = /https:\/\/([A-Za-z0-9.-]+)(?::\d+)?(?=$|[\/?#"'`<>\s)\]},;$])/g;
 
 function toRepoPath(filePath) {

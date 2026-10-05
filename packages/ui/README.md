@@ -2,9 +2,9 @@
 
 Shared UI primitives for OpenWork apps.
 
-This package ships one entrypoint: `@openwork/ui/react`, used by `apps/app`
-and `ee/apps/den-web`. (A Solid flavor existed during the Solid-to-React
-migration and was removed once the last Solid consumer disappeared.)
+This package ships one entrypoint: `@openwork/ui/react`, used by `apps/app`.
+(A Solid flavor existed during the Solid-to-React migration and was removed once
+the last Solid consumer disappeared.)
 
 Exports resolve to `src/` directly, so consumers need no build step.
 
@@ -29,9 +29,13 @@ Explicit props still work and override the seeded values, so the merge order is:
 
 ## Roadmap component
 
-`OpenWorkRoadmap` is the shared visual roadmap used by the landing and docs
-routes. Its typed sections are exported as `roadmapSections` so other OpenWork
-surfaces can reuse the same source of truth.
+`OpenWorkRoadmap` is the shared visual roadmap. Its typed sections are exported
+as `roadmapSections` so other OpenWork surfaces can reuse the same source of
+truth.
+
+Its `feedbackHref` and `docsHref` props have **no defaults** in this fork — unset,
+the component renders no button rather than linking to a hosted site. Pass the
+URLs explicitly if you want them.
 
 ## Layout convention
 

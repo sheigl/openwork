@@ -58,7 +58,9 @@ import {
   useOpenWorkModelsPromoEligibility,
 } from "../../cloud/openwork-models-promo";
 
-const DOCS_URL = "https://openworklabs.com/docs";
+// Self-hosted fork: no hosted docs. Set VITE_OPENWORK_DOCS_PAGE_URL to add a
+// docs link; the menu item hides itself when this is empty.
+const DOCS_URL = String(import.meta.env.VITE_OPENWORK_DOCS_PAGE_URL ?? "").trim();
 const BOOT_STARTED_AT = Date.now();
 const INITIALIZING_MS = 15_000;
 
@@ -505,7 +507,9 @@ export function AccountStatusMenu(props: AccountStatusMenuProps) {
             {controlSettingsBlocked ? t("settings.tab_cloud_account") : t("status.settings")}
           </DropdownMenuItem>
         ) : null}
-        {shellConfig.docsButton ? (
+        {/* DOCS_URL is empty unless VITE_OPENWORK_DOCS_PAGE_URL is set, so the
+            item has to be gated on both or the click would open "" . */}
+        {shellConfig.docsButton && DOCS_URL ? (
           <DropdownMenuItem onClick={openDocs}>
             <BookOpen className="size-3.5" />
             {t("status.docs")}

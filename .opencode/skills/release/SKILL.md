@@ -100,7 +100,7 @@ The run resolves the next version from existing `v*` tags, creates the tag on
 `origin/dev` HEAD, verifies it (`scripts/release/verify-tag.mjs`: stable
 format + strictly greater than every other stable tag), stamps the version
 into the CI workspace, builds all 18 electron matrix legs, publishes npm +
-Daytona + AUR, and flips the draft release public.
+AUR, and flips the draft release public.
 
 The tag ref is created via REST with the org-owned **diff-warden** app token
 (a `v*` ruleset bypass actor; `WARDEN_APP_ID` + `WARDEN_PRIVATE_KEY` in the
@@ -132,7 +132,7 @@ gh run watch <run-id> --repo different-ai/openwork --exit-status --interval 90
 ```
 
 Publishing is gated on the electron matrix, electron assets, and npm publish.
-`Publish AUR` (continue-on-error) and `Build + Push Daytona Snapshot` are
+`Publish AUR` (continue-on-error) is
 **non-blocking channels**: their failures don't stop the release — rerun the
 workflow with the same tag once the channel recovers.
 
@@ -145,7 +145,7 @@ gh workflow run "Release App" --repo different-ai/openwork -f tag=vX.Y.Z
 
 If the release is already **published**, a recovery run skips every desktop
 build leg and the updater-manifest merge; it replays only npm, AUR, and
-Daytona. Rebuilding re-signs the installers, and a run that fails before
+AUR. Rebuilding re-signs the installers, and a run that fails before
 `publish-release` would leave `latest*.yml` pointing at bytes that no longer
 exist. Every auto-update then fails with `sha512 checksum mismatch` (v0.18.52).
 Ship new desktop bytes as the next patch.
@@ -207,8 +207,8 @@ checks the updater manifests' sha512, and verifies signing/notarization.
 
 - Desktop installer fixes only reach users through a new release — the org
   install door (`/v1/install/:platform`) 302s to versioned assets.
-- den-api discovers published versions from the GitHub Releases API at
-  runtime (`ee/apps/den-api/src/desktop-releases.ts`): the new version is
+- clients discover published versions from the GitHub Releases API at
+  runtime: the new version is
   live for orgs as soon as the release is published — no den deploy needed.
   The committed `generated/desktop-versions.ts` is only a cold-start/offline
   fallback.

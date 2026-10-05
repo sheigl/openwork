@@ -26,7 +26,7 @@ A skill is a set of plain-language instructions. Each skill lives in a plugin, a
 
 Any member can share what they made with people and teams. Only admins can share with everyone in the organization.
 
-For the full steps, and for making your own copy of a shared skill, see [Publish and copy a skill](/start-here/do-work-with-it/publish-and-copy-a-skill). To give the same audience several plugins at once, an admin can group them in a [Collection](/cloud/share-with-your-team/collections).
+For the full steps, and for making your own copy of a shared skill, see [Publish and copy a skill](/start-here/do-work-with-it/publish-and-copy-a-skill). To hand over several plugins at once, bundle them in one directory.
 
 ## Share MCP servers
 
@@ -39,15 +39,15 @@ Admins add MCP servers as connectors. Members never see server URLs or tokens.
 5. Under **Who can use it**, choose who gets it, then click **Add** followed by the connector name.
 6. Members open **Settings › Library** in the desktop app. If each person signs in, they click **Sign in** on the connector once.
 
-For sign-in options, Slack, and troubleshooting, see [Sharing MCP connections](/cloud/share-with-your-team/shared-mcp-connections) and [MCP server compatibility](/cloud/share-with-your-team/mcp-server-compatibility).
+There is no organization connector layer in this fork: each deployment configures the MCP servers it wants, and sharing one means copying that configuration. See [Add an MCP server](/start-here/connect-your-stack/add-an-mcp-server).
 
 ## Use the same setup in other AI tools
 
-The same shared skills and connectors work outside the desktop app through the OpenWork MCP Gateway. [Add it to Claude Code, Codex, Cursor, VS Code, or another MCP client in one command](/start-here/connect-openwork-mcp).
+There is no hosted OpenWork MCP endpoint in this fork. If you want these tools inside Claude Code, Codex, Cursor, or another MCP client, run the MCP server of your own and add that URL.
 
 ## Share models too
 
-To give the team the same models, an admin adds a [managed](/cloud/share-with-your-team/managed-llm-provider) or [custom LLM provider](/cloud/share-with-your-team/custom-llm-provider) once. To control which settings members can change in the app, see [desktop policies](/cloud/share-with-your-team/desktop-policies).
+To give everyone the same models, run a gateway and share its URL, or commit the provider block to a shared `opencode.jsonc`. See [Add a custom LLM](/start-here/connect-your-stack/add-a-custom-llm).
 
 ## Share without OpenWork Cloud
 
@@ -76,5 +76,4 @@ Skills are plain `SKILL.md` folders. A workspace keeps its skills in `.opencode/
 ## Related
 
 - [Connectors, skills, and plugins](/start-here/do-work-with-it/skills-plugins-and-mcp)
-- [Team quickstart](/cloud/team-quickstart)
 - [Migrate from Claude Cowork](/start-here/migrate-from-claude-cowork)

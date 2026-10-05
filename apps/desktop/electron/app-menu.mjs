@@ -214,12 +214,16 @@ export function createApplicationMenu({ appName, docsUrl, getWindow, closeBrowse
                 },
                 { type: "separator" },
               ]),
-          {
-            label: "Docs",
-            click: () => {
-              runDetachedTask("open documentation from menu", () => shell.openExternal(docsUrl));
-            },
-          },
+          // The Docs item is only present when a documentation URL is configured. This
+// fork ships no default: pointing it at OpenWork's hosted docs would send the
+// user off-site, and at a self-hosted install there is nothing to point at.
+// Set OPENWORK_DOCS_PAGE_URL (or pass docsUrl) to restore the menu item.
+...(docsUrl ? [{
+  label: "Docs",
+  click: () => {
+    runDetachedTask("open documentation from menu", () => shell.openExternal(docsUrl));
+  },
+}] : []),
         ],
       },
     ]);

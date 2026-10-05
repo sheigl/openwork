@@ -115,7 +115,7 @@ export const WORLD_GUIDES: Readonly<Record<string, WorldGuide>> = {
       { intent: "Den signup plus a first-launch desktop", command: `${UP} preview-full --place daytona --stage <stage> --seed fresh ${DETACH}` },
       { intent: "A specific pushed commit", command: `${UP} preview-full --place daytona --stage <stage> --source den=sha:<full-pushed-sha> --seed workspace ${DETACH}` },
     ],
-    caveats: [NO_MODELS, "Does not run on Freestyle; acme-web there has the same demo apps with a signed-in desktop, and preview-desktop a signed-out one."],
+    caveats: [NO_MODELS, "Does not run on Freestyle; preview-desktop there runs the desktop app alone, signed out."],
   },
   "preview-app-web": {
     family: "web",
@@ -131,21 +131,6 @@ export const WORLD_GUIDES: Readonly<Record<string, WorldGuide>> = {
       { intent: "This checkout's web app", command: `${UP} preview-app-web --stage <stage>` },
     ],
     caveats: ["The source web app and its server, not Den's web UI. No Den or activation is seeded."],
-  },
-  "acme-web": {
-    family: "web",
-    components: ["*"],
-    targets: [
-      { target: "local/host", seeds: [], sources: ["local"], defaultSource: LOCAL },
-      { target: "daytona/linux", seeds: [], sources: ["sha", "ref"], defaultSource: DEV },
-      { target: "freestyle/linux", seeds: [], sources: ["sha", "ref"], note: "A source is required: --source ref:dev or sha:<full-pushed-sha>." },
-    ],
-    examples: [
-      { intent: "Seeded Acme demo stack from latest dev on Daytona", command: `${UP} acme-web --place daytona --stage <stage> ${DETACH}` },
-      { intent: "Seeded Acme demo stack on Freestyle", command: `${UP} acme-web --place freestyle --stage <stage> --source ref:dev ${DETACH}` },
-      { intent: "Seeded Acme demo stack from this checkout", command: `${UP} acme-web --stage <stage>` },
-    ],
-    caveats: ["Includes the in-memory demo Slack, Notion, Linear, Google Calendar and Gmail on every placement; Alex Chen is the signed-in owner."],
   },
 };
 

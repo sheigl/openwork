@@ -13,11 +13,10 @@ import {
   openworkServerConfigPath,
   openworkServerDataDir,
 } from "@openwork/paths";
-import { ensureDenStack } from "./den-stack.ts";
 import { selectedAppEnv } from "./app-env.ts";
 import { resolveEvalEngineValue } from "./eval-engine.ts";
 import type { ChildProcess } from "node:child_process";
-import type { DisposableHost, SurfaceHandle, ElectronSurfaceOptions, ChromeSurfaceOptions, DenServiceOptions, DenServiceHandle, ShareLinks } from "./types.ts";
+import type { DisposableHost, SurfaceHandle, ElectronSurfaceOptions, ChromeSurfaceOptions, ShareLinks } from "./types.ts";
 
 type OrgMode = "single_org" | "multi_org";
 
@@ -447,13 +446,6 @@ function isOrgMode(value: unknown): value is OrgMode {
   return value === "single_org" || value === "multi_org";
 }
 
-async function runtimeOrgMode(webUrl: string): Promise<OrgMode> {
-  const response = await fetch(`${cleanUrl(webUrl)}/api/runtime-config`, { signal: AbortSignal.timeout(8_000) });
-  if (!response.ok) throw new Error(`runtime-config returned HTTP ${response.status}`);
-  const body: unknown = await response.json();
-  if (isRecord(body) && isOrgMode(body.orgMode)) return body.orgMode;
-  throw new Error("runtime-config response did not include orgMode");
-}
 
 export function electronProfilePaths(root: string): ElectronProfilePaths {
   return {
@@ -785,7 +777,6 @@ export function createLocalHost(options: LocalHostOptions): DisposableHost {
     : join(options.repoRoot, "evals", "results", ".surfaces", String(process.pid)));
   const log = options.log;
   const spawnedSurfaces = new Set<SurfaceHandle>();
-  const denPorts = new Set<number>();
 
   async function disposeKnownPorts(handle: SurfaceHandle): Promise<void> {
     const ownerProcessGroup = handle.pid;
@@ -793,8 +784,6 @@ export function createLocalHost(options: LocalHostOptions): DisposableHost {
   }
 
   async function disposeDenPorts(): Promise<void> {
-    for (const port of denPorts) await freePort(port, { log });
-    denPorts.clear();
   }
 
 
@@ -986,22 +975,6 @@ async function ensureDisplay(repoRoot: string, env: NodeJS.ProcessEnv, log: (mes
       };
       spawnedSurfaces.add(handle);
       return handle;
-    },
-
-    async startDen(opts: DenServiceOptions = {}): Promise<DenServiceHandle> {
-      if (opts.seed === "none") {
-        log("seed:none requested; local Den stack currently keeps the Acme demo seed, so continuing with the default seed.");
-      }
-      await ensureDenStack({ log, cdpCandidates: [], skipApp: true, orgMode: opts.orgMode });
-      const apiUrl = process.env.OPENWORK_EVAL_DEN_API_URL?.trim();
-      const webUrl = process.env.OPENWORK_EVAL_DEN_WEB_URL?.trim();
-      if (!apiUrl || !webUrl) throw new Error("Den stack did not export OPENWORK_EVAL_DEN_API_URL / OPENWORK_EVAL_DEN_WEB_URL.");
-      const orgMode = await runtimeOrgMode(webUrl);
-      const apiPort = explicitPort(apiUrl);
-      const webPort = explicitPort(webUrl);
-      if (apiPort !== null) denPorts.add(apiPort);
-      if (webPort !== null) denPorts.add(webPort);
-      return { webUrl, apiUrl, orgMode, hostKind: "local" };
     },
 
     async share(): Promise<ShareLinks> {

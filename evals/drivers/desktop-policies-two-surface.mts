@@ -34,7 +34,7 @@ const DEN_API = "http://localhost:8790";
 const DEN_WEB = "http://localhost:3005";
 const ADMIN_EMAIL = "alex@acme.test";
 const ADMIN_PASSWORD = "OpenWorkDemo123!";
-const DEMO_LOGO = "https://openworklabs.com/favicon.ico";
+const DEMO_LOGO = "https://brand.example.internal/favicon.ico";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const runId = new Date().toISOString().replace(/[:.]/g, "-");

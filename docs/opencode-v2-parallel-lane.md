@@ -245,7 +245,7 @@ Provider configuration and credentials are not in that set
 ## Proof (this PR)
 
 Any named e2e spec can exercise the v2 chat lane with
-`OPENWORK_EVAL_ENGINE=v2 pnpm evals:e2e <slug> [--daytona]`; the harness starts
+`OPENWORK_EVAL_ENGINE=v2 pnpm evals:e2e <slug>`; the harness starts
 the app with chat routed through the OpenCode v2 sidecar, while an unset value
 or `v1` preserves the existing lane. The resulting evidence header records the
 engine used by the run.

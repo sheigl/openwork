@@ -159,7 +159,8 @@ if (BLANK_SLATE_LAUNCH.enabled || process.env.OPENWORK_ELECTRON_USE_MOCK_KEYCHAI
 }
 const RELEASE_DOWNLOAD_BASE_URL = "https://github.com/different-ai/openwork/releases/latest/download";
 const RELEASE_PAGE_URL = "https://github.com/different-ai/openwork/releases/latest";
-const DOCS_PAGE_URL = "https://openworklabs.com/docs";
+// No hosted docs URL in this fork; set OPENWORK_DOCS_PAGE_URL to add a Docs menu item.
+const DOCS_PAGE_URL = process.env.OPENWORK_DOCS_PAGE_URL?.trim() || "";
 const applicationMenu = createApplicationMenu({
   appName: APP_NAME,
   docsUrl: DOCS_PAGE_URL,
@@ -440,8 +441,8 @@ const APP_ICON_PATH = resolveAppIconPath();
 const APP_ICON_IMAGE = APP_ICON_PATH ? nativeImage.createFromPath(APP_ICON_PATH) : null;
 const BRAND_ICON_MAX_BYTES = 2 * 1024 * 1024;
 const BRAND_ICON_FETCH_TIMEOUT_MS = 10_000;
-// Keep in sync with ee/apps/den-api/src/brand-icon-validation.ts so logo CDNs
-// that expect a browser request behave the same at save time and apply time.
+// Brand icons are fetched from CDN hosts that expect a browser request, so the
+// save-time and apply-time fetches must send the same user agent.
 const BRAND_ICON_FETCH_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
 function scheduleBlankSlateProfileCleanup() {
@@ -1037,7 +1038,11 @@ if (extraLaunchArgs) {
   }
 }
 configureFakeMediaForTests(app, envFlagEnabled("OPENWORK_ELECTRON_FAKE_MEDIA"));
-const DEFAULT_DEN_BASE_URL = "https://app.openworklabs.com";
+// Self-hosted fork: there is no default control plane. Previously
+// "https://app.openworklabs.com", which made every desktop install point at
+// OpenWork's cloud. Empty means "no control plane configured"; deployments
+// supply baseUrl through desktop-bootstrap.json or OPENWORK_DEN_BASE_URL.
+const DEFAULT_DEN_BASE_URL = process.env.OPENWORK_DEN_BASE_URL?.trim() || "";
 const DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:4096";
 const FORCE_DESKTOP_REQUIRE_SIGNIN =
   DESKTOP_DISTRIBUTION.requireSignin || envFlagEnabled("OPENWORK_FORCE_SIGNIN");

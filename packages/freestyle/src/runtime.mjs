@@ -17,7 +17,7 @@ const runtime = await launchHeadlessWeb({
     OPENWORK_SERVER_STATE_PATH: `${root}/data/openwork/server-state.json`,
     OPENWORK_SERVER_TOKEN_STORE_PATH: `${root}/data/openwork/server-tokens.json`,
     OPENCODE_CONFIG_DIR: `${root}/config/opencode`, OPENCODE_DB: `${root}/data/opencode/opencode.db`,
-    OPENWORK_DEV_HEADLESS_WEB_DEN_PROXY: "1", OPENWORK_DEV_DEN_PROXY_TARGET: "https://app.openworklabs.com", VITE_DISABLE_OPENWORK_MODELS: "0",
+    VITE_DISABLE_OPENWORK_MODELS: "0",
     VITE_OPENWORK_POSTHOG_KEY: "", VITE_OPENWORK_SENTRY_DSN: "",
     OPENWORK_PORT: "8778", OPENWORK_WEB_PORT: "5178", HOST: "127.0.0.1", VITE_HOST: "127.0.0.1",
   },

@@ -1,156 +1,52 @@
-# Daytona / Dev Container Setup
+# Dev Container Setup
 
-Full-stack dev environment that runs the **real Electron app** + Den stack in a cloud sandbox. You see and steer the desktop app through your browser via noVNC.
+Runs the real OpenWork Electron desktop app inside a container with a virtual
+display you can reach from your browser over noVNC.
 
-## What's included
+Everything here used to be oriented around OpenWork's hosted cloud (the `ee/`
+Den control plane and Daytona cloud sandboxes). Both have been removed from
+this fork, so what remains is a plain local devcontainer.
 
-| Service | Port | Description |
-|---------|------|-------------|
-| **Desktop App (noVNC)** | 6080 | The real Electron app rendered in a virtual display, accessible in your browser |
-| **Den Web** | 3005 | Admin dashboard for managing orgs, restrictions, providers |
-| **Den API** | 8788 | Control plane API |
-| **CDP Debug** | 9825 | Chrome DevTools Protocol — for app and browser automation |
-| **Vite HMR** | 5173 | Hot module replacement for the React UI |
-| **MySQL** | 3306 | Database (internal) |
+## What's here
 
-## Quick start with Daytona Electron/noVNC
+| File | Purpose |
+| --- | --- |
+| `Dockerfile` | Node 20 + Electron system deps + Xvfb/noVNC/bun |
+| `docker-compose.yml` | Single `workspace` service, port-forwarded |
+| `devcontainer.json` | Codespaces / devcontainers entry point |
+| `start-services.sh` | Boots Xvfb, noVNC, Vite and Electron |
+| `dev-sandbox.sh` | One-shot sandbox bootstrap |
 
-```bash
-bash .devcontainer/create-daytona-openwork-snapshot.sh   # one-time / refresh when deps change
-bash .devcontainer/test-on-daytona.sh [branch-or-commit]
-```
-
-The test script creates a sandbox from the reusable `openwork-eval-vnc` snapshot
-when present, checks out the target ref, skips `pnpm install` if the lockfile is
-unchanged, starts XFCE/noVNC, Vite, and Electron, then prints the noVNC and CDP
-URLs. If the snapshot is missing, it fails fast and tells you to create it. The
-snapshot intentionally does not bake `node_modules`; installs use the reusable
-`openwork-eval-pnpm-store` volume so the image stays under Daytona's 20 GB limit.
-
-For provider evals, create/populate the reusable Daytona secrets volume once:
+## Quick start
 
 ```bash
-bash .devcontainer/setup-daytona-secrets-volume.sh .newtoken
-bash .devcontainer/setup-daytona-secrets-volume.sh .anthropic anthropic.env
+docker compose -f .devcontainer/docker-compose.yml up -d
+docker compose -f .devcontainer/docker-compose.yml exec workspace \
+  bash .devcontainer/start-services.sh
 ```
 
-Future Daytona test sandboxes mount `openwork-eval-secrets:/daytona-secrets`
-and source every `/daytona-secrets/*.env` file automatically before Electron
-starts. Use this volume for provider keys and other eval-only secrets; never
-commit those files into the repo.
+Then open:
 
-For downloadable eval artifacts or optional video recording, use:
+- **Desktop app (noVNC):** http://localhost:6080
+- **Vite HMR:** http://localhost:5173
+- **Electron CDP:** `ws://127.0.0.1:9825`
 
-```bash
-bash .devcontainer/test-on-daytona.sh [branch-or-commit] --artifacts-volume
-bash .devcontainer/test-on-daytona.sh [branch-or-commit] --record-video
-```
+## Ports
 
-The artifacts flow mounts `openwork-eval-artifacts:/daytona-artifacts`, starts a
-static download server on port 8090, and prints a Daytona preview URL. Recording
-writes mp4 files to `/daytona-artifacts/recordings` and prints the direct video
-URL. Screenshots write png files to `/daytona-artifacts/screenshots` for quick
-AI/human validation checkpoints. Stop recording with
-`.devcontainer/stop-daytona-recording.sh` so ffmpeg finalizes the file cleanly.
+| Port | Service |
+| --- | --- |
+| 5173 | App Vite dev server (HMR) |
+| 6080 | noVNC — the Electron desktop app in your browser |
+| 9825 | Electron CDP remote debugging |
 
-Do not use the generic `daytona create https://github.com/different-ai/openwork`
-flow for Electron/noVNC tests. The default resource size is too small and the
-generic image path does not guarantee the desktop stack we need.
+## Removed with the cloud control plane
 
-## Quick start with Daytona server
+- MySQL 8.4 and every `DEN_*` / `BETTER_AUTH_*` / `DATABASE_URL` variable.
+  Den is the hosted control plane and is gone from this fork.
+- All `*daytona*` scripts and `Dockerfile.daytona-*`. Daytona cloud sandboxes
+  are gone along with `ee/packages/cloud-runtime-daytona`.
+- Port 3005 (Den Web) and 8788 (Den API).
 
-```bash
-bash .devcontainer/create-daytona-openwork-server-snapshot.sh  # one-time / refresh when deps change
-bash .devcontainer/test-server-on-daytona.sh [branch-or-commit]
-```
-
-The server helper creates a separate public Daytona sandbox for the Den stack:
-MySQL, Den API, and Den Web. It prints public preview URLs and
-the exact Electron command to point a desktop sandbox at that server:
-
-```bash
-bash .devcontainer/test-on-daytona.sh [branch-or-commit] \
-  --den-base-url https://3005-...daytonaproxy... \
-  --den-api-base-url https://8788-...daytonaproxy...
-```
-
-This keeps the architecture simple: the server sandbox owns cloud auth, orgs,
-policies, workers, and persistence; the Electron sandbox stays a real desktop
-client and talks to the server through public Daytona preview URLs.
-
-## How it works
-
-1. `.devcontainer/Dockerfile.daytona-vnc` starts from `daytonaio/sandbox:0.6.0`,
-   which includes Daytona's expected desktop packages: Xvfb, XFCE, x11vnc,
-   noVNC, websockify, and dbus-x11.
-2. `.devcontainer/create-daytona-openwork-snapshot.sh` bakes that image into
-   `openwork-eval-vnc` without `node_modules`.
-3. `/opt/openwork-daytona/start-daytona-vnc.sh` starts Xvfb, XFCE, x11vnc, and
-   noVNC on display `:99`.
-4. `test-on-daytona.sh` installs dependencies through the reusable
-   `openwork-eval-pnpm-store` volume when `node_modules` is missing or the
-   lockfile changed.
-5. Vite serves the React UI on port 5173.
-6. `/opt/openwork-daytona/start-daytona-electron.sh` sources optional secrets,
-   applies Daytona-safe Chromium flags, and starts Electron on display `:99`.
-7. **CDP on port 9825** enables Chrome MCP and browser-tool automation.
-8. Optional artifact capture mounts `/daytona-artifacts`, serves it on port 8090,
-   records display `:99` with ffmpeg when `--record-video` is passed, and can
-   capture screenshot checkpoints with `.devcontainer/capture-daytona-screenshot.sh`.
-
-## Validation Evidence
-
-Use three layers of evidence for Daytona UI work:
-
-- **CDP assertions:** use browser tools against port 9825 to inspect text, URL,
-  state, and accessibility snapshots. This is the primary AI validation path.
-- **Screenshots:** run `daytona exec "$SANDBOX" -- 'bash .devcontainer/capture-daytona-screenshot.sh'` after important states. These png files live in `/daytona-artifacts/screenshots`.
-- **Recordings:** start with `--record-video --recording-name <name>` for flows
-  that need PR evidence. These mp4 files live in `/daytona-artifacts/recordings`.
-
-Recordings prove the flow to humans. CDP assertions and screenshots give the AI
-fast checkpoints to decide whether behavior is correct before reporting success.
-
-## AI Skills
-
-The Daytona toolbox is exposed to opencode through focused skills:
-
-- `daytona`: CLI setup, long-lived sandboxes, logs, snapshots, and the secrets volume.
-- `record-a-demo`: supplementary screenshots, recordings, and presentation artifacts.
-- `run-tests`: runs `evals/specs` coverage; the CLI chooses and reports placement.
-
-## Testing the customization system
-
-1. Open **Den Web** (port 3005) in a separate tab
-2. Sign up → create org → Org Settings → UI Customization
-3. Set overrides → Save
-4. In the **Electron app** (noVNC on port 6080):
-   - Cloud → developer mode → base URL `http://localhost:3005`
-   - Sign in → Settings → see the desktop policy banner
-
-## Architecture
-
-```
-Your Browser
-    │
-    ├── :6080 noVNC ──▶ x11vnc ──▶ XFCE/Xvfb ──▶ Electron App
-    │                              │
-    │                              ├── CDP :9825 (automatable)
-    │                              └── Vite HMR :5173
-    │
-    ├── :3005 Den Web (Next.js)
-    │
-    └── :8788 Den API (Hono) ──▶ MySQL :3306
-```
-
-With a separate server sandbox, the Electron box uses Daytona preview URLs for
-Den Web/API instead of `localhost`, while the server sandbox still keeps its
-internal service graph local.
-
-## Automation
-
-The Electron app exposes CDP on port 9825. You can:
-
-- Connect Playwright: `const browser = await chromium.connectOverCDP('ws://localhost:9825')`
-- Connect Chrome MCP for AI agent testing
-- Take screenshots, run UI tests, etc.
+The Xvfb/noVNC startup that `start-daytona-vnc.sh` used to own is now inline in
+`start-services.sh`, and Electron starts via `pnpm --filter @openwork/desktop
+dev:electron`.

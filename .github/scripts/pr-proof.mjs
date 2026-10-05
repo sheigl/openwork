@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 
 const SPEC = /^evals\/specs\/.+\.e2e\.test\.ts$/;
 const PACKAGED_SPEC = /^evals\/specs\/packaged-[^/]+\.e2e\.test\.ts$/;
-const DAYTONA_SPEC = "evals/specs/windows-published-preview.e2e.test.ts";
 // A spec opts into checkpoints with the Vitest tag, e.g. `{ tags: ["checkpoints"] }`.
 const CHECKPOINTS_TAG = /\btags\s*:\s*\[[^\]]*["'`]checkpoints["'`]/;
 
@@ -50,20 +49,18 @@ export function proofLanes(allSpecs, { event, current, repo, actor, triggeringAc
   // Packaged specs boot a packaged desktop binary, which only the packaged
   // smoke runner builds; running them against a dev build always fails.
   const packagedSpecs = specs.filter(spec => PACKAGED_SPEC.test(spec));
-  // Windows release proof requires a Daytona Windows VM and a real installer.
   // It cannot be rerouted to local Linux to obtain a green but meaningless run.
-  const daytonaSpecs = specs.filter(spec => spec === DAYTONA_SPEC);
   // Core journeys get their own slim job: the app runs in Freestyle, the runner only drives it.
   const coreSpecs = specs.filter(spec => CORE_SPECS.includes(spec));
   // Checkpoint runs need the Freestyle credential, so they use the protected lane.
-  const checkpointSpecs = specs.filter(spec => !coreSpecs.includes(spec) && !liveSpecs.includes(spec) && !packagedSpecs.includes(spec) && !daytonaSpecs.includes(spec) && tagged(spec));
-  const normalSpecs = specs.filter(spec => !coreSpecs.includes(spec) && !liveSpecs.includes(spec) && !packagedSpecs.includes(spec) && !daytonaSpecs.includes(spec) && !checkpointSpecs.includes(spec));
-  if (liveSpecs.length || daytonaSpecs.length || checkpointSpecs.length) {
+  const checkpointSpecs = specs.filter(spec => !coreSpecs.includes(spec) && !liveSpecs.includes(spec) && !packagedSpecs.includes(spec)  && tagged(spec));
+  const normalSpecs = specs.filter(spec => !coreSpecs.includes(spec) && !liveSpecs.includes(spec) && !packagedSpecs.includes(spec)  && !checkpointSpecs.includes(spec));
+  if (liveSpecs.length || checkpointSpecs.length) {
     if (!trustedProofContext({ event, current, repo, actor, triggeringActor })) {
       throw new Error("Live PR proof is unsupported for forks, untrusted repository metadata, or Dependabot. A maintainer must move the reviewed change to a same-repository PR (organization members run automatically; other contributors need pr-slow-specs approval); do not bypass or skip the selected live or Windows spec.");
     }
   }
-  return { coreSpecs, normalSpecs, liveSpecs, packagedSpecs, daytonaSpecs, checkpointSpecs };
+  return { coreSpecs, normalSpecs, liveSpecs, packagedSpecs, checkpointSpecs };
 }
 
 function trustedProofContext({ event, current, repo, actor, triggeringActor }) {

@@ -15,7 +15,7 @@ const BUILD_GIVE_UP_MS = 15 * 60_000;
 const BUILD_FAILED_GRACE_MS = 2 * 60_000;
 const BUILD_FAILED_IDLE_POLLS = 3;
 
-const WORLD_NAMES: Record<string, string> = { "app-web": "OpenWork web", "acme-web": "ACME", desktop: "Desktop only" };
+const WORLD_NAMES: Record<string, string> = { "app-web": "OpenWork web", desktop: "Desktop only" };
 
 interface BuildPoll { ready: boolean; building: boolean; layer?: string; steps: BuildStepView[] }
 
@@ -67,8 +67,8 @@ export function LaunchPreview({ id, connected }: { id: string; connected: boolea
     setBuild(null);
     let buildOutcome: "still-building" | "failed" | null = null;
     try {
-      const requestedWorld = world === "acme-desktop" ? "acme-web" : world;
-      const desktop = world === "desktop" || world === "acme-desktop";
+      const requestedWorld = world;
+      const desktop = world === "desktop";
       const request = () => fetch(`/r/${id}/launch`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ world: requestedWorld }) });
       let response = await request();
       if (response.status === 202) {
@@ -134,8 +134,6 @@ export function LaunchPreview({ id, connected }: { id: string; connected: boolea
       <label>World <select aria-label="Preview world" value={world} disabled={busy} onChange={(event) => { setWorld(event.target.value); setError(null); }}>
         <option value="app-web">OpenWork web</option>
         <option value="desktop">Desktop only (signed out)</option>
-        <option value="acme-web">ACME web (full stack)</option>
-        <option value="acme-desktop">ACME desktop (full stack)</option>
       </select></label>
       <div className="preview-launch-actions">
         {session && !expired && <a className="preview-open" href={session.url} target="_blank" rel="noreferrer">{session.desktop ? "Open desktop" : "Open sandbox"}</a>}

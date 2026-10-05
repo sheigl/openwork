@@ -305,13 +305,20 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
   let server: ManagedOpencodeV2Server | undefined;
 
   try {
+    // opencode-models-url.ts returns string | undefined on purpose: this fork has
+    // no default remote catalog, so an unconfigured deployment omits the key
+    // entirely rather than pointing at a mirror we do not control. Build the env
+    // the same way the server does instead of forcing a string.
     const opencodeModelsUrl = await resolveOpencodeModelsUrl();
+    const modelsUrlEnv: Record<string, string> = opencodeModelsUrl
+      ? { OPENCODE_MODELS_URL: opencodeModelsUrl }
+      : {};
     let occupiedPortRejected = false;
     try {
       const impostor = await createManagedOpencodeV2Server({
         bin: binary, rootDir: join(rootDir, "occupied-port"), port: witnessAddress.port,
         bootTimeoutMs: 10_000,
-        env: { OPENCODE_CONFIG: baseConfig, OPENCODE_MODELS_URL: opencodeModelsUrl },
+        env: { OPENCODE_CONFIG: baseConfig, ...modelsUrlEnv },
       });
       await impostor.close();
     } catch {
@@ -329,7 +336,7 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
       bin: binary,
       rootDir,
       env: {
-        OPENCODE_CONFIG: baseConfig, OPENCODE_MODELS_URL: opencodeModelsUrl,
+        OPENCODE_CONFIG: baseConfig, ...modelsUrlEnv,
         OPENWORK_ENCRYPTION_KEY: "fixture-server-only", OPENWORK_TOKEN: "fixture-server-only",
         OPENWORK_HOST_TOKEN: "fixture-server-only", OPENWORK_SERVER_TOKEN: "fixture-server-only",
         OPENWORK_POLICY_TOKEN: "fixture-server-only",

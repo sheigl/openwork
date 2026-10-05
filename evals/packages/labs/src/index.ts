@@ -11,4 +11,3 @@ export * from "./mock-planetscale.ts";
 export * from "./mock-atlassian.ts";
 export * from "./mock-inference.ts";
 export * from "./mock-cloud-skills.ts";
-export * from "./mock-cloud-startup.ts";

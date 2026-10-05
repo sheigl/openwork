@@ -853,7 +853,7 @@ export async function main(argv: string[], options: WorldCliOptions): Promise<nu
         const release = command.args.includes("--release") || sources.desktop?.kind === "release";
         if (release) env.OPENWORK_EVAL_REF = sha;
         else if (!sources.desktop) sources.desktop = { kind: "sha", sha };
-      } else if ((preview || script.name === "acme-web") && place === "daytona" && !sources.den && !sources["*"]) {
+      } else if (preview && place === "daytona" && !sources.den && !sources["*"]) {
         const pinned = process.env.OPENWORK_EVAL_REF?.trim();
         const sha = pinned ?? await resolveRef("dev");
         if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error("Preview Den source must be a full reviewed, pushed commit SHA.");
@@ -866,13 +866,7 @@ export async function main(argv: string[], options: WorldCliOptions): Promise<nu
         if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error("Freestyle desktop source must be a full reviewed, pushed commit SHA.");
         sources.desktop = { kind: "sha", sha };
       }
-      if (script.name === "acme-web" && place === "daytona") {
-        if (command.args.length > 0) throw new Error("Daytona acme-web uses --source to select a ref; script arguments after -- are not supported.");
-        const acmeSource = sources["*"] ?? sources.den;
-        if (acmeSource?.kind !== "sha") throw new Error("Daytona acme-web requires a pinned commit SHA.");
-        env.OPENWORK_EVAL_REF = acmeSource.sha;
-      }
-      if (place === "daytona" && script.name !== "preview-app-web" && !preview && script.name !== "acme-web") {
+      if (place === "daytona" && script.name !== "preview-app-web" && !preview) {
         const pinned = process.env.OPENWORK_EVAL_REF?.trim() || process.env.GITHUB_SHA?.trim() || await resolveRef("dev");
         if (!/^[0-9a-f]{40}$/.test(pinned)) throw new Error("Daytona world source must be a full reviewed, pushed commit SHA.");
         env.OPENWORK_EVAL_REF = pinned;

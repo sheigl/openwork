@@ -5,7 +5,7 @@ keywords: ["custom MCP", "local MCP", "add MCP server", "workspace MCP", "Add wo
 ---
 
 <Note>
-**Local workspace setup.** Custom MCP servers are supported without an OpenWork Cloud account, so this path stays free and local to the current workspace. For a connection managed and assigned by your organization, use [OpenWork Cloud connectors](/cloud/share-with-your-team/shared-mcp-connections) under **Manage › Connectors**.
+Custom MCP servers are configured locally, per workspace. There is no organization connector layer in this fork — each deployment configures the servers it wants.
 </Note>
 
 Use this guide only when you need a custom or local MCP server that is not available through OpenWork Connect.
@@ -44,7 +44,7 @@ back to OpenWork. If a custom MCP needs behavior OpenWork does not support,
 Some MCP servers do not support dynamic client registration. If the server gives you a pre-registered OAuth client ID and client secret, add it in **Add workspace MCP** under **OAuth on this device** (**OAuth client ID** and **OAuth client secret**).
 
 <Note>
-Workspace MCPs are local to you. To share an MCP App with the organization as a dashboard, add it in OpenWork Cloud under **Manage › Connectors** and see [Dashboards](/cloud/share-with-your-team/dashboards).
+Workspace MCPs are local to that workspace. To share one, copy the configuration to the other deployment — see [Share your setup](/start-here/do-work-with-it/share-your-setup).
 </Note>
 
 <Frame>

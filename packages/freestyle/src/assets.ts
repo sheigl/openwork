@@ -11,7 +11,6 @@ import { readFile } from "node:fs/promises";
  * paths anywhere in src/.
  */
 const assets = {
-  "acme-runtime.mjs": new URL("./acme-runtime.mjs", import.meta.url),
   "browser-health.mjs": new URL("./browser-health.mjs", import.meta.url),
   "browser-recipe.ts": new URL("./browser-recipe.ts", import.meta.url),
   "build-recipes.ts": new URL("./build-recipes.ts", import.meta.url),

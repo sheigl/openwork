@@ -1,6 +1,6 @@
 ---
 name: run-tests
-description: Run the tests, run one spec, run e2e locally or on Daytona, investigate a skipped spec. Use for executing @openwork/testkit agent-first verification.
+description: Run the tests, run one spec, run e2e locally, investigate a skipped spec. Use for executing @openwork/testkit agent-first verification.
 ---
 
 # Skill: Run Tests
@@ -19,8 +19,8 @@ pnpm evals:pr specs/<name>.test.ts
 ```
 
 The CLI prints the placement and reason; copy that line into the report. Use
-`--local` only when the user asks for local. `--daytona` requires Daytona. Never
-switch lanes to turn a red Daytona run green.
+e2e runs locally in this fork; there is no cloud sandbox lane and no `--daytona`
+flag. Never switch lanes to turn a red run green.
 
 ## Run the core journey
 
@@ -33,20 +33,15 @@ FREESTYLE_API_KEY="$(infisical secrets get FREESTYLE_API_KEY --env dev --path /o
 ```
 
 It runs against the pushed `HEAD` commit; push first. After changing the world
-itself, run `node evals/scripts/check-freestyle-world.ts --base <sha>` instead.
+
 
 ## Prepare local fallback
 
 ```bash
 pnpm --filter @openwork/types build
-pnpm --filter @openwork-ee/den-db build
 pnpm --filter @openwork/email build
-pnpm dev:den:mysql
 ```
 
-- Local `server()` requires MySQL at `127.0.0.1:3306`.
-- Build those workspace dependencies before local Den; otherwise den-api imports
-  can fail.
 - If the checkout path contains spaces, set `OPENWORK_EVAL_SURFACES_DIR` to a
   space-free path before E2E tests. node-gyp and electron-rebuild require it.
 
@@ -58,13 +53,13 @@ pnpm dev:den:mysql
 pnpm evals:pr specs/<name>.test.ts
 ```
 
-- Run one app/Den-driving E2E test:
+- Run one app-driving E2E test:
 
 ```bash
 pnpm evals:e2e <name>
 ```
 
-- The CLI owns placement and prints `placement: <daytona|local> (<reason>)`.
+- The CLI owns placement and prints `placement: <local> (<reason>)`. There is no cloud sandbox placement in this fork.
 
 ## Match the runtime
 

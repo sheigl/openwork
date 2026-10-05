@@ -25,7 +25,6 @@ export const RENAMED_WORLDS: Readonly<Record<string, string>> = {
   "cloud-model-infra": "./evals/worlds/infra/cloud-model-infra.ts",
   "cloud-model-infra-worker": "./evals/worlds/infra/cloud-model-infra-worker.ts",
   // Removed: nothing ran them; these cover the same ground.
-  "acme-demo": "acme-web",
   "azure-byok": "preview-den",
   "gateway-local": "preview-den",
   "den-gateway-local": "preview-den",

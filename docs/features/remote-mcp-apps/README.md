@@ -17,7 +17,7 @@ resource loading or a standalone URL-App installation path.
 ## Standard MCP server path
 
 Connect continues to own server configuration, authentication, access grants,
-per-member credentials, and tool policy. The OpenWork Cloud control server
+per-member credentials, and tool policy. The hosted control server
 publishes a member-scoped resource at:
 
 ```text

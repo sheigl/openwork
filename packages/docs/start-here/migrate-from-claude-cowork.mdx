@@ -22,7 +22,7 @@ You do not need to rebuild your setup to move from Claude Cowork to OpenWork. St
 
 ## 1. Install OpenWork and open the same work
 
-1. [Download OpenWork](https://openworklabs.com/download) for macOS, Windows, or Linux.
+1. Install the desktop app — `brew install --cask openwork` on macOS, or grab a build from [GitHub releases](https://github.com/sheigl/openwork/releases) for macOS, Windows, or Linux.
 2. Create a workspace from the folder or repository you used with Cowork.
 3. Ask OpenWork to summarize the workspace before changing anything. This confirms it can read the files you expect.
 
@@ -37,7 +37,7 @@ OpenWork is model-agnostic. You can keep using Anthropic models, add another pro
 - For another provider, your own API key, or an AI gateway such as OpenRouter or LiteLLM, follow [Add a custom LLM or AI gateway](/start-here/connect-your-stack/add-a-custom-llm).
 - To run a model on your own computer, follow [Use local models (Ollama, LM Studio)](/start-here/connect-your-stack/use-local-models).
 - For Gemini or Google Vertex AI, follow [Use Gemini and Google Vertex AI](/start-here/connect-your-stack/use-gemini-and-vertex-ai).
-- For a team-managed provider, follow [Managed LLM provider](/cloud/share-with-your-team/managed-llm-provider).
+- To share one provider across a team, run a gateway and share its URL — see [Add a custom LLM](/start-here/connect-your-stack/add-a-custom-llm).
 
 Your Claude subscription and Anthropic API billing may be separate. Confirm API access before removing Cowork from your workflow.
 
@@ -59,8 +59,8 @@ Credentials do not move between products. Reconnect each service so OpenWork rec
 
 - For Gmail, Calendar, Drive, Slack, Notion, Linear, and other managed services, use [Connect your services](/start-here/connect-your-stack/connect-services).
 - For another remote or local MCP server, use [Add a custom MCP server](/start-here/connect-your-stack/add-an-mcp-server).
-- For an organization-wide setup, use [Shared MCP connections](/cloud/share-with-your-team/shared-mcp-connections).
-- To use the same skills and connections from Claude Code, Codex, or Cursor, [add OpenWork MCP in one command](/start-here/connect-openwork-mcp).
+- To share MCP connections, copy the configuration to each deployment — see [Share your setup](/start-here/do-work-with-it/share-your-setup).
+- There is no hosted OpenWork MCP endpoint in this fork. To get these tools into Claude Code, Codex, or Cursor, run an MCP server of your own.
 
 Test read-only actions first. Then test actions that modify data, such as sending a message or updating a record, with a disposable example.
 
@@ -80,7 +80,7 @@ Recreate one schedule at a time and run it manually before enabling recurrence. 
 
 Do not ask every teammate to repeat your local setup by hand. In OpenWork Cloud, publish approved skills and connections once, assign them to the right teams, and apply desktop policies centrally.
 
-See [Share skills and MCP servers with your team](/start-here/do-work-with-it/share-your-setup), then start with the [team quickstart](/cloud/team-quickstart), then review [desktop policies](/cloud/share-with-your-team/desktop-policies) and [members and roles](/cloud/members-and-rbac).
+See [Share your setup](/start-here/do-work-with-it/share-your-setup). Note that this fork has no organization layer, so there are no teams, roles, or desktop policies to configure — sharing is copying files.
 
 ## Cutover checklist
 

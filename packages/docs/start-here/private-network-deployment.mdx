@@ -22,7 +22,7 @@ Set `DEN_BASE_URL` to the Den web origin. `DEN_API_BASE` is the server-only URL 
 
 If you publish a separate Den API origin, the one-time install-link exchange and external MCP clients must be able to reach that origin too.
 
-External MCP clients such as Cursor, Claude Code, VS Code, ChatGPT, and OpenCode are separate from the desktop. They must reach the MCP endpoint you configure for them, usually `<DEN_API_PUBLIC_URL>/mcp/agent`. See [OpenWork Connect MCP](/cloud/run-in-the-cloud/cloud-mcp) for the external-client flow.
+External MCP clients such as Cursor, Claude Code, VS Code, ChatGPT, and OpenCode are separate from the desktop. They must reach the MCP server URL you configure for them — a host you control, such as your own gateway. There is no hosted OpenWork MCP endpoint in this fork.
 
 Unless you mirror or replace public dependencies internally, laptops may also need outbound access for installers, release assets, npm packages used by `npx`, and the OpenCode model catalog. Keep that allowlist in [Outbound network access](/start-here/outbound-network-access), and use [Installer delivery](/start-here/installer-delivery) when installer downloads must stay inside Den.
 

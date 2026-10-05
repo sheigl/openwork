@@ -367,8 +367,10 @@ function RoadmapSectionBlock({ section }: { section: RoadmapSection }) {
 }
 
 export function OpenWorkRoadmap({
-  feedbackHref = "https://openworklabs.com/feedback?source=roadmap",
-  docsHref = "https://openworklabs.com/docs",
+  // Self-hosted fork: no default links to OpenWork's site. Both are opt-in via
+  // props; unset renders no button rather than sending the reader to the cloud.
+  feedbackHref,
+  docsHref,
 }: {
   feedbackHref?: string
   docsHref?: string
@@ -428,18 +430,22 @@ export function OpenWorkRoadmap({
             Tell us which workflow, workspace, or surface would make the biggest difference to how you work.
           </p>
           <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-            <a
-              href={feedbackHref}
-              className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#011627] px-6 text-sm font-medium text-white shadow-[0_14px_32px_-16px_rgba(1,22,39,0.55)] transition hover:-translate-y-0.5 hover:bg-[#102638]"
-            >
-              Share feedback
-            </a>
-            <a
-              href={docsHref}
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
-            >
-              Read the docs
-            </a>
+            {feedbackHref ? (
+              <a
+                href={feedbackHref}
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#011627] px-6 text-sm font-medium text-white shadow-[0_14px_32px_-16px_rgba(1,22,39,0.55)] transition hover:-translate-y-0.5 hover:bg-[#102638]"
+              >
+                Share feedback
+              </a>
+            ) : null}
+            {docsHref ? (
+              <a
+                href={docsHref}
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
+              >
+                Read the docs
+              </a>
+            ) : null}
           </div>
         </div>
       </section>

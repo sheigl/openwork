@@ -692,11 +692,6 @@ function normalizeCloudEndpointUrl(value: string): string | null {
     if (url.search || url.hash) return null;
     const normalizedPath = url.pathname.replace(/\/+$/, "") || "/";
     if (!normalizedPath.endsWith("/mcp/agent")) return null;
-    if (url.protocol === "https:" && url.hostname.toLowerCase() === "app.openworklabs.com" && normalizedPath === "/api/den/mcp/agent") {
-      url.hostname = "api.app.openworklabs.com";
-      url.pathname = "/mcp/agent";
-      return url.toString();
-    }
     url.pathname = normalizedPath;
     return url.toString();
   } catch {
@@ -710,10 +705,8 @@ function canonicalizeCloudMcpConfig(config: Record<string, unknown>): Record<str
   return normalizedUrl ? { ...config, url: normalizedUrl } : config;
 }
 
-const BUILT_IN_CLOUD_MCP_ORIGINS = new Set([
-  "https://api.openworklabs.com",
-  "https://api.app.openworklabs.com",
-]);
+// Self-hosted fork: OpenWork's hosted MCP gateway is not trusted.
+const BUILT_IN_CLOUD_MCP_ORIGINS = new Set<string>([]);
 
 function isLoopbackHostname(hostname: string): boolean {
   const normalized = hostname.toLowerCase();

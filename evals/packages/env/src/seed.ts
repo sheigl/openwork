@@ -5,7 +5,7 @@ import type { StartMockMcpOptions } from "@openwork/labs";
 import type { DaytonaExec, DesktopHandle } from "@openwork/hosts";
 import type { App } from "./desktop-app.ts";
 import type { AppWeb, SeedAppWebOptions } from "./app-web.ts";
-import type { Den, ServerOptions } from "./den.ts";
+import type { Den, ServerOptions } from "./den-contract.ts";
 import type { FaultProxy } from "./faults.ts";
 import type { MockBoot } from "./mock.ts";
 

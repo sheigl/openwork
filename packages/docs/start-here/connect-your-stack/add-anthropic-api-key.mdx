@@ -6,7 +6,7 @@ keywords: ["anthropic", "claude", "api key", "sk-ant", "claude api", "connect pr
 ---
 
 <Note>
-**Local provider setup.** The key you add here is for your desktop app. OpenWork remains free, and you do not need to sign in to OpenWork Cloud. To manage Anthropic access for a team, use [a managed LLM provider](/cloud/share-with-your-team/managed-llm-provider).
+**Local provider setup.** The key you add here is stored in your local config. OpenWork is MIT licensed with no account of any kind. To share one key across a team, put a gateway in front of Anthropic instead.
 </Note>
 
 To use Claude models in OpenWork, create an API key in Anthropic and paste it into OpenWork. Anthropic doesn't allow third-party apps to sign in with a Claude subscription, so OpenWork connects to Anthropic with an API key.
@@ -17,7 +17,7 @@ To use Claude models in OpenWork, create an API key in Anthropic and paste it in
 - Treat the key like a password. Anthropic shows the full key only once, when you create it.
 
 <Tip>
-Setting this up for a team? An admin can add Anthropic once in OpenWork Cloud under **AI Gateway › AI Providers**. Members then get the models without pasting a key. See [Adding a managed LLM provider](/cloud/share-with-your-team/managed-llm-provider).
+Setting this up for a team? Run a gateway (LiteLLM, Bifrost, or your own) in front of Anthropic, then have everyone point the provider at the gateway. See [Add a custom LLM](/start-here/connect-your-stack/add-a-custom-llm).
 </Tip>
 
 ## Create the key in Anthropic

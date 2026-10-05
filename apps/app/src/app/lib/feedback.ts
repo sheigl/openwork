@@ -4,8 +4,11 @@ const ENV_FEEDBACK_URL = String(import.meta.env.VITE_OPENWORK_FEEDBACK_URL ?? ""
 const ENV_APP_VERSION = String(import.meta.env.VITE_OPENWORK_APP_VERSION ?? "").trim();
 const ENV_BUILD_SHA = String(import.meta.env.VITE_OPENWORK_BUILD_SHA ?? "").trim();
 
-export const DEFAULT_FEEDBACK_URL =
-  ENV_FEEDBACK_URL || "https://openworklabs.com/feedback";
+// Self-hosted fork: no default feedback destination. This previously fell back
+// to OpenWork's hosted feedback form, so every "Send feedback" click left the
+// user's deployment. Set VITE_OPENWORK_FEEDBACK_URL to point at your own
+// (an issue tracker, a mailto:, whatever you prefer).
+export const DEFAULT_FEEDBACK_URL = ENV_FEEDBACK_URL;
 
 type FeedbackUrlOptions = {
   entrypoint: string;
@@ -84,7 +87,14 @@ function parseClientOsContext(): ClientOsContext {
   return platform ? { platform } : {};
 }
 
-export function buildFeedbackUrl(options: FeedbackUrlOptions): string {
+/**
+ * Build the feedback link, or null when no destination is configured.
+ * `DEFAULT_FEEDBACK_URL` is empty unless VITE_OPENWORK_FEEDBACK_URL is set, so
+ * this used to throw `TypeError: Invalid URL` in a self-hosted build. Callers
+ * must skip the action on null rather than opening "".
+ */
+export function buildFeedbackUrl(options: FeedbackUrlOptions): string | null {
+  if (!DEFAULT_FEEDBACK_URL) return null;
   const url = new URL(DEFAULT_FEEDBACK_URL);
   const osContext = parseClientOsContext();
   const deployment = options.deployment ?? (isDesktopRuntime() ? "desktop" : "web");

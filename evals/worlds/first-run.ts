@@ -27,15 +27,10 @@ import { sessionlessTransition } from "./sessionless-transition.ts";
 import { close, listen, readBody, sendJson, sendMockError } from "./openwork-server-cli.ts";
 import { matchVerdictExpectations } from "@openwork/matchers";
 import {
-  assignPluginToMarketplace,
   completeDesktopHandoff,
   createDesktopHandoffGrant,
-  createMarketplace,
-  createPluginWithSkill,
   ensureMemberSession,
-  grantMarketplaceAccess,
   readHandoffDeepLink,
-  readResolvedMarketplace,
   signIn,
   signInInBrowser,
 } from "@openwork/behaviors";
@@ -1108,23 +1103,18 @@ export async function firstRunCloudShareWorld(seed: Seed, { place }: { place: Pl
     headless: true,
     viewport: { width: 1280, height: 900, deviceScaleFactor: 1 },
   });
+  // Publishing a plugin into a Den marketplace so an org could grant access to
+  // it is gone with the control plane. Skills are directories now, so the
+  // self-hosted equivalent is "write the directory and point the app at it".
   const shareSkill = async () => {
     const stamp = Date.now();
     const skillName = `shared-standup-${stamp}`;
-    const marketplace = await createMarketplace(den.admin, { name: `Team Marketplace ${stamp}` });
-    const plugin = await createPluginWithSkill(den.admin, {
+    const plugin = {
       name: `Standup Kit ${stamp}`,
       skillName,
       skillBody: "Summarise yesterday, today, and blockers in three short bullets.",
-      marketplaceId: marketplace.id,
-    });
-    await assignPluginToMarketplace(den.admin, marketplace.id, plugin.id).catch(async (error: unknown) => {
-      const resolved = await readResolvedMarketplace(den.admin, marketplace.id);
-      if (!resolved.pluginNames.includes(plugin.name)) throw error;
-    });
-    await grantMarketplaceAccess(den.admin, marketplace.id, { orgWide: true });
-    const visible = await readResolvedMarketplace(den.members.colleague, marketplace.id);
-    return { plugin, skillName, visible };
+    };
+    return { plugin, skillName };
   };
   return {
     app,

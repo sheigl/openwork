@@ -33,7 +33,7 @@ For every Product and Website PR, decide **Included** or **Omitted**:
 - Title: the single most valuable user outcome, in plain words, like "Run OpenWork on your own server with one command" or "Linux installs repair themselves". Never name internal tooling in the title.
 - 2–6 bullets, most valuable first. Start each with a short bold lead-in, then explain what changed for the user and, when it helps, what it was like before. Example: `- **Connecting an account in chat no longer gets stuck.** When the agent needs you to connect a service, you now always get a clear Connect / Skip card. Before, chat could wait forever on "Checking connection request…".`
 - Say who a bullet is for when it is not everyone: "For admins:", "For self-hosters:", "If you use OpenWork from Claude Code, Cursor, or Codex:".
-- Use words the reader sees in the product. Never use repo jargon: ACME, worlds, Warden, Freestyle, evals, testkit, typecheck, CI, prewarm, snapshot, Daytona, MCP App, refactor. No PR numbers in the docs entry.
+- Use words the reader sees in the product. Never use repo jargon: ACME, worlds, Warden, evals, testkit, typecheck, CI, prewarm, snapshot, MCP App, refactor. No PR numbers in the docs entry.
 - Commands the reader will type (like `openwork-server web`) belong in backticks.
 
 ## Files you modify

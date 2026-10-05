@@ -22,7 +22,6 @@ dev, or demo work. Names follow `<lifecycle>-<surface>`:
 | `preview-den` | Den alone (web, API, database): no desktop. |
 | `preview-full` | Den plus a desktop wired to it, seeded with `fresh`, `team`, `restricted`, or `workspace`. |
 | `preview-app-web` | The web app plus the server it needs (local, private Daytona URL, Freestyle). |
-| `acme-web` | The seeded Acme demo stack: Den, AI Gateway, and the web app. |
 | `dev-app-web` | Your working tree as the local server plus web app (`pnpm dev:headless-web`). |
 | `live-desktop`, `live-app-web` | Source desktop or web app on your installed production state. |
 
@@ -83,9 +82,8 @@ run locally but fails closed remotely.
 source (a pushed SHA or ref, a published release, or `local`) and the `fresh`
 or `blank` seed. `preview-den` accepts a `den` source, and `preview-full` a `den`
 source; both take one of the `fresh`, `team`, `restricted`, or `workspace`
-seeds. `preview-app-web` and `acme-web` accept one default SHA/ref source on
-Daytona or Freestyle, mapped to the existing `--ref` input or the Daytona Den
-ref. Other worlds reject these flags rather than silently ignoring them. Source
+seeds. `preview-app-web` accepts one default SHA/ref source on Daytona or
+Freestyle, mapped to the existing `--ref` input. Other worlds reject these flags rather than silently ignoring them. Source
 refs resolve to immutable Git SHAs before adopting a running stage. Published
 releases need an exact version and `public`, `cloud`, or `enterprise`
 distribution. The CLI fingerprints the resolved source and seed with the rest
@@ -143,7 +141,7 @@ Note: most of `evals/worlds/` contains test fixtures with a different lifecycle
 - Review-app PR launches still use the Freestyle snapshot/VM API directly;
   `world up preview-app-web --place freestyle` uses the same provider path, but
   the review service does not call the local world CLI. Freestyle snapshot
-  kinds keep their build names (`app-web`, `acme-web`, `desktop`).
+  kinds keep their build names (`app-web`, `desktop`).
 - Daytona Windows published desktop previews use an owned, private VM, verify
   the installer digest, launch in the interactive user session, and check the
   private viewer and CDP. They do not run source builds or seed Den identity.
