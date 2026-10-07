@@ -5,7 +5,7 @@ import { eventually, localMysqlIsRunning, needs, server, test } from "@openwork/
 
 const ORGANIZATION_NAME = "Role Change Session Survival";
 const e2eTestsEnabled = process.env.OPENWORK_EVAL_E2E_TESTS === "1";
-const localPlacement = process.env.OPENWORK_EVAL_DAYTONA !== "1" && !process.env.OPENWORK_EVAL_DEN_API_URL?.trim();
+const localPlacement = !process.env.OPENWORK_EVAL_DEN_API_URL?.trim();
 const mysqlOpen = await localMysqlIsRunning();
 const title = !e2eTestsEnabled
   ? "role change session survival skipped — needs: set OPENWORK_EVAL_E2E_TESTS=1"

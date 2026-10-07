@@ -216,7 +216,7 @@ for (const issuerSupport of [true, false, undefined]) {
 }
 
 test("Den native OAuth callbacks publish member completion timestamps", { timeout: 300_000 }, async ({ place, evidence }) => {
-  needs({ commands: ["bun"], placement: "local" });
+  needs({ commands: ["bun"] });
   const email = "native-oauth-completion@example.test";
   // This fixture issues email-bearing ID tokens for both providers, so the
   // Microsoft callback resolves identity without fetching Graph userinfo.

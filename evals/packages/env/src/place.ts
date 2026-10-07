@@ -1,18 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { connect } from "node:net";
-import { provisionDesktopSandbox, provisionWebSandbox, deleteSandboxes, daytonaSandbox } from "@openwork/hosts";
 import { createConnection } from "mysql2/promise";
 import type { RowDataPacket } from "mysql2";
-import { daytonaPlacement, resolveEvalRef } from "./eval-ref.ts";
-import { targetFromEnv } from "@openwork/world";
-import type {
-  ChromeSurfaceOptions,
-  DesktopSandbox,
-  ElectronSurfaceOptions,
-  Host,
-  RetainedElectronSurface,
-  SurfaceHandle,
-} from "@openwork/hosts";
+import type { Host } from "@openwork/hosts";
 
 export const DEFAULT_MYSQL_URL = "mysql://root:password@127.0.0.1:3306";
 
@@ -23,21 +13,15 @@ export interface DbHandle extends AsyncDisposable {
   drop(): Promise<void>;
 }
 
-export type DenBase =
-  | { kind: "local"; apiHost: "127.0.0.1"; webHost: "127.0.0.1" }
-  | { kind: "daytona"; ref: string };
+export type DenBase = { kind: "local"; apiHost: "127.0.0.1"; webHost: "127.0.0.1" };
 
 /** One placement decision shared by every resource in a test. */
 export interface Place {
-  kind: "local" | "daytona";
+  kind: "local";
   host(): Host | undefined;
   db(name: string): Promise<DbHandle>;
   exposeMock(handle: { url: string }): Promise<URL>;
   denBase(): DenBase;
-}
-
-function messageText(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 export function validateDatabaseName(name: string): void {
@@ -159,192 +143,8 @@ class LocalPlace implements Place {
   }
 }
 
-interface PlacedSurface {
-  host: Host;
-  sandbox: string;
-  created: boolean;
-  release?: Awaited<ReturnType<typeof provisionDesktopSandbox>>["release"];
-}
-
-/** Provisions one isolated sandbox for each app surface, only when it is used. */
-class DaytonaPlacementHost implements Host {
-  readonly kind = "daytona";
-  readonly workspaceRoot = "/workspace";
-  readonly #ref: string;
-  readonly #preparedSandbox: string | undefined;
-  readonly #preparedHost: Host | undefined;
-  readonly #surfaces = new Map<SurfaceHandle, PlacedSurface>();
-
-  constructor(ref: string, preparedSandbox?: string) {
-    this.#ref = ref;
-    this.#preparedSandbox = preparedSandbox;
-    this.#preparedHost = preparedSandbox ? daytonaSandbox(preparedSandbox) : undefined;
-  }
-
-  async #provision(name: string, surface: "desktop" | "web", options?: ElectronSurfaceOptions): Promise<PlacedSurface> {
-    // The pooled lane prepares one desktop sandbox per worker; surfaces share
-    // it unless a spec asks for its own (two desktops on two sandboxes).
-    if (this.#preparedSandbox && this.#preparedHost && !options?.ownSandbox) {
-      if (options?.release) throw new Error("Published release previews require a newly owned Daytona sandbox.");
-      return {
-        host: this.#preparedHost,
-        sandbox: this.#preparedSandbox,
-        created: false,
-      };
-    }
-    const provisionOptions = {
-      ref: this.#ref,
-      name,
-      ...(process.env.OPENWORK_WORLD_PREVIEW_DAYTONA === "1" ? { autoStopMinutes: 0 } : {}),
-      log: (line: string) => console.error(`[openwork/testkit] ${line}`),
-    };
-    const provisioned: DesktopSandbox = surface === "web"
-      ? await provisionWebSandbox(provisionOptions)
-      : await provisionDesktopSandbox({ ...provisionOptions, ...(options?.release ? { release: options.release } : {}) });
-    return {
-      host: daytonaSandbox(provisioned.sandbox),
-      sandbox: provisioned.sandbox,
-      created: provisioned.created,
-      ...(provisioned.release ? { release: provisioned.release } : {}),
-    };
-  }
-
-  async spawnElectron(name: string, options?: ElectronSurfaceOptions): Promise<SurfaceHandle> {
-    const placed = await this.#provision(name, "desktop", options);
-    try {
-      const handle = await placed.host.spawnElectron(name, {
-        ...options,
-        ...(placed.release ? { binaryPath: placed.release.binaryPath } : {}),
-      });
-      if (placed.release) {
-        handle.meta = {
-          ...handle.meta,
-          releaseArchive: placed.release.archivePath,
-          releaseAsset: placed.release.assetName,
-          releaseBinary: placed.release.binaryPath,
-          releaseDigest: placed.release.digest,
-          releaseDistribution: placed.release.distribution,
-          releaseInstallRoot: placed.release.installRoot,
-          releaseManifest: placed.release.manifestPath,
-          releaseVersion: placed.release.version,
-        };
-      }
-      this.#surfaces.set(handle, placed);
-      return handle;
-    } catch (error) {
-      if (placed.created) {
-        await deleteSandboxes([placed.sandbox]).catch((cleanupError: unknown) => {
-          console.error(`[openwork/testkit] Daytona cleanup failed: ${messageText(cleanupError)}`);
-        });
-      }
-      throw error;
-    }
-  }
-
-  async spawnElectronRetained(name: string, options?: ElectronSurfaceOptions): Promise<RetainedElectronSurface> {
-    const placed = await this.#provision(name, "desktop", options);
-    try {
-      if (!placed.host.spawnElectronRetained) throw new Error("The selected host cannot retain a failed Electron launch.");
-      const surface = await placed.host.spawnElectronRetained(name, {
-        ...options,
-        ...(placed.release ? { binaryPath: placed.release.binaryPath } : {}),
-      });
-      if (placed.release) {
-        surface.handle.meta = {
-          ...surface.handle.meta,
-          releaseArchive: placed.release.archivePath,
-          releaseAsset: placed.release.assetName,
-          releaseBinary: placed.release.binaryPath,
-          releaseDigest: placed.release.digest,
-          releaseDistribution: placed.release.distribution,
-          releaseInstallRoot: placed.release.installRoot,
-          releaseManifest: placed.release.manifestPath,
-          releaseVersion: placed.release.version,
-        };
-      }
-      this.#surfaces.set(surface.handle, placed);
-      return surface;
-    } catch (error) {
-      if (placed.created) {
-        await deleteSandboxes([placed.sandbox]).catch((cleanupError: unknown) => {
-          console.error(`[openwork/testkit] Daytona cleanup failed: ${messageText(cleanupError)}`);
-        });
-      }
-      throw error;
-    }
-  }
-
-  async spawnChrome(name: string, options?: ChromeSurfaceOptions): Promise<SurfaceHandle> {
-    const placed = await this.#provision(name, "web");
-    try {
-      const handle = await placed.host.spawnChrome(name, options);
-      this.#surfaces.set(handle, placed);
-      return handle;
-    } catch (error) {
-      if (placed.created) {
-        await deleteSandboxes([placed.sandbox]).catch((cleanupError: unknown) => {
-          console.error(`[openwork/testkit] Daytona cleanup failed: ${messageText(cleanupError)}`);
-        });
-      }
-      throw error;
-    }
-  }
-
-  async disposeSurface(handle: SurfaceHandle): Promise<void> {
-    const placed = this.#surfaces.get(handle);
-    if (!placed) return;
-    this.#surfaces.delete(handle);
-    try {
-      await placed.host.disposeSurface(handle);
-    } finally {
-      if (placed.created) await deleteSandboxes([placed.sandbox]);
-    }
-  }
-}
-
-class DaytonaPlace implements Place {
-  readonly kind = "daytona";
-  readonly #ref: string;
-  readonly #host: Host;
-
-  constructor(ref: string, preparedDesktopSandbox?: string) {
-    this.#ref = ref;
-    this.#host = new DaytonaPlacementHost(ref, preparedDesktopSandbox);
-  }
-
-  host(): Host {
-    return this.#host;
-  }
-
-  denBase(): DenBase {
-    return { kind: "daytona", ref: this.#ref };
-  }
-
-  async db(_name: string): Promise<DbHandle> {
-    throw new Error("Daytona Den databases are owned by the provisioned Den sandbox.");
-  }
-
-  async exposeMock(handle: { url: string }): Promise<URL> {
-    const url = new URL(handle.url);
-    if (["127.0.0.1", "localhost", "0.0.0.0", "::1"].includes(url.hostname)) {
-      throw new Error("mock is unreachable from remote den");
-    }
-    return url;
-  }
-}
 
 /** Resolve placement once; resources never inspect placement environment again. */
 export function resolvePlace(env: NodeJS.ProcessEnv = process.env): Place {
-  // Explicit values must not silently fall through to a local runtime.
-  const target = targetFromEnv(env);
-  // The Freestyle and Daytona placements went with the cloud sandbox provider.
-  // resolveTarget fails closed on them before reaching this point, so there is
-  // nothing left to branch on here.
-  if (daytonaPlacement(env)) {
-    return new DaytonaPlace(
-      resolveEvalRef(env),
-      env.OPENWORK_EVAL_DAYTONA_DESKTOP_SANDBOX?.trim(),
-    );
-  }
   return new LocalPlace(env.OPENWORK_EVAL_MYSQL_URL?.trim() || DEFAULT_MYSQL_URL);
 }

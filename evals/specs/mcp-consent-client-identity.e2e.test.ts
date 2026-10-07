@@ -4,7 +4,7 @@ import { mcpConsentClientIdentity } from "../worlds/mcp-consent-client-identity.
 
 const test = spec.world(mcpConsentClientIdentity, {
   timeout: 300_000,
-  needs: { commands: ["bun", "pnpm"], placement: "local" },
+  needs: { commands: ["bun", "pnpm"] },
   resources: { surfaces: ["web"], services: ["den", "mock"] },
 });
 

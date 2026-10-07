@@ -5,7 +5,7 @@ import { engineLiveParity, record } from "../worlds/engine-live-parity.ts";
 
 const test = spec.world(engineLiveParity, { timeout: 600_000,
   resources: { surfaces: ["appWeb"], services: [] },
-  needs: { placement: "local", env: ["OPENWORK_EVAL_ENGINE"] },
+  needs: { env: ["OPENWORK_EVAL_ENGINE"] },
 });
 
 test(`LIVE-FRESH ${resolveEvalEngine()}: ${resolveEvalEngine() === "v2" ? "create the first workspace and open the composer" : "create the first workspace and send to the real free model"}`, async ({ world, user, probe, step, evidence }) => {

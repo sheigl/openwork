@@ -564,7 +564,6 @@ export class SeedChannel implements Seed {
         name: options.name,
         host: this.#runtime.place.host(),
         profileDir: options.profileDir,
-        ownSandbox: options.ownSandbox,
         env: options.model
           ? { ...options.env, OPENWORK_EVAL_MODEL: options.model }
           : options.env,
@@ -692,18 +691,15 @@ export class SeedChannel implements Seed {
   faultProxy(den: Den) {
     this.#runtime.requireDen(den);
     return this.#runtime.call("seed", "faultProxy", `faultProxy(${this.#runtime.place.kind})`, null, async () => {
-      const proxy = await startFaultProxy(den.ref, {
-        place: this.#runtime.place,
-        sandbox: den.placement?.kind === "daytona" ? den.placement.sandboxId : undefined,
-      });
+      const proxy = await startFaultProxy(den.ref);
       return this.#runtime.own(proxy);
     });
   }
 
-  denLink(den: Den, options: import("@openwork/env").SeedDenLinkOptions = {}) {
+  denLink(den: Den) {
     this.#runtime.requireDen(den);
-    return this.#runtime.call("seed", "denLink", `denLink(${options.client ?? "public-preview"})`, null, async () => {
-      const link = await startDenLink(den.ref, options);
+    return this.#runtime.call("seed", "denLink", "denLink(local)", null, async () => {
+      const link = await startDenLink(den.ref);
       return this.#runtime.own(link);
     });
   }
@@ -791,7 +787,7 @@ export class UserChannel implements User {
         const masked = await callFunctionOnSurface(surface, () => document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'password', []);
         if (masked !== true) throw new Error("Sensitive typing requires a masked password input");
       }
-      const mac = surface.handle.hostKind !== "daytona" && process.platform === "darwin";
+      const mac = process.platform === "darwin";
       await pressKey(surface, options.replace ? (mac ? "Meta+A" : "Control+A") : (mac ? "Meta+ArrowDown" : "Control+End"));
       if (options.typing) {
         await typeWithCadence(text, options.typing, (character) => typeText(surface, character));

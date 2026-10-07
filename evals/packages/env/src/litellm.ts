@@ -5,17 +5,9 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import {
-  checkedExec,
-  defaultDaytonaExec,
-  deleteSandboxes,
-  execInSandbox,
-} from "@openwork/hosts";
 import { progress, trackResource } from "@openwork/world";
 import type { Server, ServerResponse } from "node:http";
 import { SkipError } from "./needs.ts";
-import type { Place } from "./place.ts";
-import type { DaytonaExec, DaytonaExecResult } from "@openwork/hosts";
 
 const IMAGE = "ghcr.io/berriai/litellm:v1.97.0@sha256:468c25f35f3e5ec4e414974f00deab93337b1b4d9953cabcfd3722e59415f834";
 const POSTGRES_IMAGE = "postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685";
@@ -23,165 +15,11 @@ const COMMAND_TIMEOUT_MS = 180_000;
 const STARTUP_TIMEOUT_MS = 90_000;
 const DATABASE_STARTUP_TIMEOUT_MS = 300_000;
 const POSTGRES_STARTUP_TIMEOUT_MS = 90_000;
-const EXEC_READY_TIMEOUT_MS = 180_000;
-const PREVIEW_EXPIRY_SECONDS = 7_200;
-const DAYTONA_PROXY_PORT = 4_000;
-const DAYTONA_WITNESS_PORT = 4_001;
-const DAYTONA_CONFIG = "/tmp/openwork-litellm-config.json";
-const DAYTONA_WITNESS = "/tmp/openwork-litellm-witness.py";
-const DAYTONA_LOG = "/tmp/openwork-litellm.log";
-const DAYTONA_WITNESS_LOG = "/tmp/openwork-litellm-witness.log";
-const BASE64_CHUNK_LENGTH = 8 * 1_024;
-const MAX_DAYTONA_COMMAND_LENGTH = 12 * 1_024;
 const steps = progress();
 const DEFAULT_MAX_INPUT_TOKENS = 128_000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 16_384;
 
-const DAYTONA_DOCKERFILE = `FROM ${IMAGE}
-USER root
-ENTRYPOINT ["/usr/bin/bash", "-lc"]
-CMD ["sleep infinity"]
-`;
 
-const DAYTONA_WITNESS_SOURCE = `import argparse
-import base64
-import hashlib
-import hmac
-import json
-import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlsplit
-
-MAX_BODY_BYTES = 1048576
-REQUESTS = []
-SEQUENCE = 0
-LOCK = threading.Lock()
-
-
-def fingerprint(value):
-    return hashlib.sha256(value.encode("utf-8")).hexdigest()
-
-
-class Handler(BaseHTTPRequestHandler):
-    def log_message(self, format, *args):
-        return
-
-    def send_json(self, status, value):
-        payload = json.dumps(value, separators=(",", ":")).encode("utf-8")
-        self.send_response(status)
-        self.send_header("content-type", "application/json")
-        self.send_header("content-length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
-
-    def token_fingerprint(self):
-        authorization = self.headers.get("authorization", "")
-        token = authorization[7:].strip() if authorization.startswith("Bearer ") else ""
-        return fingerprint(token)
-
-    def control_authorized(self):
-        return hmac.compare_digest(self.token_fingerprint(), OPTIONS.control_token_id)
-
-    def do_GET(self):
-        parsed = urlsplit(self.path)
-        if parsed.path == "/v1/models":
-            self.send_json(200, {
-                "object": "list",
-                "data": [{"id": MODEL, "object": "model", "owned_by": "openwork-testkit"}],
-            })
-            return
-        if parsed.path not in ("/__openwork_litellm/health", "/__openwork_litellm/requests"):
-            self.send_json(404, {"error": {"message": "not found"}})
-            return
-        if not self.control_authorized():
-            self.send_json(401, {"error": "unauthorized"})
-            return
-        with LOCK:
-            sequence = SEQUENCE
-            if parsed.path == "/__openwork_litellm/health":
-                self.send_json(200, {"ok": True, "sequence": sequence})
-                return
-            values = parse_qs(parsed.query).get("after", ["0"])
-            try:
-                after = int(values[0])
-            except ValueError:
-                self.send_json(400, {"error": "invalid cursor"})
-                return
-            if after < 0:
-                self.send_json(400, {"error": "invalid cursor"})
-                return
-            requests = [entry.copy() for entry in REQUESTS if entry["sequence"] > after]
-        self.send_json(200, {"sequence": sequence, "requests": requests})
-
-    def do_POST(self):
-        global SEQUENCE
-        path = urlsplit(self.path).path
-        if path not in ("/v1/chat/completions", "/chat/completions"):
-            self.send_json(404, {"error": {"message": "not found"}})
-            return
-        try:
-            length = int(self.headers.get("content-length", "0"))
-        except ValueError:
-            self.send_json(400, {"error": {"message": "invalid content length"}})
-            return
-        if length < 0 or length > MAX_BODY_BYTES:
-            self.send_json(413, {"error": {"message": "request body too large"}})
-            return
-        body_text = self.rfile.read(length).decode("utf-8", errors="replace")
-        try:
-            body = json.loads(body_text)
-        except json.JSONDecodeError:
-            body = None
-        model = body.get("model", "") if isinstance(body, dict) and isinstance(body.get("model"), str) else ""
-        token_id = self.token_fingerprint()
-        with LOCK:
-            SEQUENCE += 1
-            sequence = SEQUENCE
-            REQUESTS.append({
-                "sequence": sequence,
-                "model": model,
-                "tokenId": token_id,
-                "bodyText": body_text,
-            })
-        if not hmac.compare_digest(token_id, OPTIONS.upstream_token_id):
-            self.send_json(401, {"error": {"message": "unauthorized"}})
-            return
-        completion_id = "chatcmpl-openwork-" + str(sequence)
-        if isinstance(body, dict) and body.get("stream") is True:
-            self.send_response(200)
-            self.send_header("content-type", "text/event-stream")
-            self.send_header("cache-control", "no-cache")
-            self.send_header("connection", "close")
-            self.end_headers()
-            chunks = [
-                {"id": completion_id, "object": "chat.completion.chunk", "choices": [{"index": 0, "delta": {"role": "assistant", "content": REPLY}, "finish_reason": None}]},
-                {"id": completion_id, "object": "chat.completion.chunk", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
-            ]
-            for chunk in chunks:
-                self.wfile.write(("data: " + json.dumps(chunk, separators=(",", ":")) + "\\n\\n").encode("utf-8"))
-            self.wfile.write(b"data: [DONE]\\n\\n")
-            self.wfile.flush()
-            return
-        self.send_json(200, {
-            "id": completion_id,
-            "object": "chat.completion",
-            "model": model,
-            "choices": [{"index": 0, "message": {"role": "assistant", "content": REPLY}, "finish_reason": "stop"}],
-            "usage": {"prompt_tokens": 8, "completion_tokens": 8, "total_tokens": 16},
-        })
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--port", type=int, required=True)
-parser.add_argument("--model-b64", required=True)
-parser.add_argument("--reply-b64", required=True)
-parser.add_argument("--upstream-token-id", required=True)
-parser.add_argument("--control-token-id", required=True)
-OPTIONS = parser.parse_args()
-MODEL = base64.b64decode(OPTIONS.model_b64).decode("utf-8")
-REPLY = base64.b64decode(OPTIONS.reply_b64).decode("utf-8")
-ThreadingHTTPServer(("0.0.0.0", OPTIONS.port), Handler).serve_forever()
-`;
 
 export interface LiteLlmUpstreamRequest {
   sequence: number;
@@ -752,274 +590,28 @@ async function startLocalLiteLlm(
   }
 }
 
-export function liteLlmSandboxName(): string {
-  return `openwork-litellm-eval-${process.pid}-${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
-}
-
-function uploadCommands(content: string, remotePath: string): string[] {
-  const source = Buffer.from(content);
-  const encoded = source.toString("base64");
-  const encodedPath = `${remotePath}.b64`;
-  const commands = [`: > ${encodedPath}`];
-  for (let offset = 0; offset < encoded.length; offset += BASE64_CHUNK_LENGTH) {
-    commands.push(`printf %s ${encoded.slice(offset, offset + BASE64_CHUNK_LENGTH)} >> ${encodedPath}`);
-  }
-  commands.push([
-    "decode_status=0",
-    `base64 -d ${encodedPath} > ${remotePath} || decode_status=$?`,
-    `actual_bytes=$(wc -c < ${remotePath})`,
-    `rm -f ${encodedPath}`,
-    `test "$decode_status" -eq 0 && test "$actual_bytes" -eq ${source.byteLength}`,
-  ].join("; "));
-  return commands;
-}
-
-async function remoteExec(
-  exec: DaytonaExec,
-  sandbox: string,
-  script: string,
-  context: string,
-  timeoutMs = 30_000,
-): Promise<DaytonaExecResult> {
-  const commandLength = ["exec", sandbox, "--", `bash -lc '${script}'`].join(" ").length;
-  if (commandLength > MAX_DAYTONA_COMMAND_LENGTH) {
-    throw new Error(`LiteLLM Daytona command is ${commandLength} characters; maximum is ${MAX_DAYTONA_COMMAND_LENGTH}.`);
-  }
-  return execInSandbox(exec, sandbox, script, { context, timeoutMs });
-}
-
-async function waitForExecReady(exec: DaytonaExec, sandbox: string): Promise<void> {
-  const deadline = Date.now() + EXEC_READY_TIMEOUT_MS;
-  let last = "not attempted";
-  while (Date.now() < deadline) {
-    try {
-      await remoteExec(exec, sandbox, "true", `LiteLLM sandbox exec-ready gate for ${sandbox}`, 15_000);
-      return;
-    } catch (error) {
-      last = messageText(error);
-    }
-    await delay(2_000);
-  }
-  throw new Error(`LiteLLM sandbox ${sandbox} did not become exec-ready within ${EXEC_READY_TIMEOUT_MS}ms. Last: ${last}`);
-}
-
-function firstHttpsUrl(text: string): string | null {
-  const match = /https:\/\/[^\s"'<>)]+/.exec(text);
-  return match ? match[0].replace(/[.,;:]+$/, "") : null;
-}
-
-async function previewUrl(exec: DaytonaExec, sandbox: string, port: number): Promise<string> {
-  const result = await checkedExec(
-    exec,
-    ["preview-url", sandbox, "-p", String(port), "--expires", String(PREVIEW_EXPIRY_SECONDS)],
-    `LiteLLM preview URL gate for ${sandbox}:${port}`,
-    { timeoutMs: 60_000 },
-  );
-  const url = firstHttpsUrl(result.stdout);
-  if (!url) throw new Error(`LiteLLM preview URL gate for ${sandbox}:${port} did not return an HTTPS URL.`);
-  return url;
-}
-
-async function waitForDaytonaReady(
-  fetchImpl: typeof fetch,
-  gatewayUrl: string,
-  controlUrl: string,
-  modelId: string,
-  secrets: LiteLlmSecrets,
-): Promise<void> {
-  const deadline = Date.now() + STARTUP_TIMEOUT_MS;
-  let last = "not attempted";
-  while (Date.now() < deadline) {
-    let healthResponse: Response;
-    try {
-      healthResponse = await fetchImpl(`${controlUrl}/__openwork_litellm/health`, {
-        headers: { authorization: `Bearer ${secrets.controlKey}` },
-        signal: AbortSignal.timeout(5_000),
-      });
-    } catch (error) {
-      last = `control: ${messageText(error)}`;
-      await delay(1_000);
-      continue;
-    }
-    if (!healthResponse.ok) {
-      last = `control HTTP ${healthResponse.status}`;
-      await delay(1_000);
-      continue;
-    }
-    let health: unknown;
-    try {
-      health = await healthResponse.json();
-    } catch {
-      throw new Error("LiteLLM authenticated control health returned invalid JSON.");
-    }
-    parseHealth(health);
-
-    let modelsResponse: Response;
-    try {
-      modelsResponse = await fetchImpl(`${gatewayUrl}/v1/models`, {
-        headers: { authorization: `Bearer ${secrets.masterKey}` },
-        signal: AbortSignal.timeout(5_000),
-      });
-    } catch (error) {
-      last = `models: ${messageText(error)}`;
-      await delay(1_000);
-      continue;
-    }
-    if (!modelsResponse.ok) {
-      last = `models HTTP ${modelsResponse.status}`;
-      await delay(1_000);
-      continue;
-    }
-    let models: unknown;
-    try {
-      models = await modelsResponse.json();
-    } catch {
-      throw new Error("LiteLLM /v1/models readiness gate returned invalid JSON.");
-    }
-    if (!modelIds(models).includes(modelId)) {
-      throw new Error(`LiteLLM /v1/models readiness gate did not include model ${modelId}.`);
-    }
-    return;
-  }
-  throw new Error(`LiteLLM Daytona readiness gate timed out after ${STARTUP_TIMEOUT_MS}ms. Last: ${last}`);
-}
-
-function launchCommand(input: { modelId: string; reply: string; upstreamTokenId: string; controlTokenId: string }): string {
-  const model = Buffer.from(input.modelId).toString("base64");
-  const reply = Buffer.from(input.reply).toString("base64");
-  return `/app/.venv/bin/python3 - <<PYEOF
-import subprocess
-witness_log = open("${DAYTONA_WITNESS_LOG}", "ab", buffering=0)
-subprocess.Popen(["/app/.venv/bin/python3", "${DAYTONA_WITNESS}", "--port", "${DAYTONA_WITNESS_PORT}", "--model-b64", "${model}", "--reply-b64", "${reply}", "--upstream-token-id", "${input.upstreamTokenId}", "--control-token-id", "${input.controlTokenId}"], stdin=subprocess.DEVNULL, stdout=witness_log, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
-proxy_log = open("${DAYTONA_LOG}", "ab", buffering=0)
-subprocess.Popen(["/app/.venv/bin/litellm", "--config", "${DAYTONA_CONFIG}", "--host", "0.0.0.0", "--port", "${DAYTONA_PROXY_PORT}"], stdin=subprocess.DEVNULL, stdout=proxy_log, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
-PYEOF
-echo detached`;
-}
-
-async function startDaytonaLiteLlm(
-  input: {
-    modelId: string;
-    reply: string;
-    maxInputTokens: number;
-    maxOutputTokens: number;
-    daytonaExec?: DaytonaExec;
-    fetchImpl?: typeof fetch;
-  },
-  secrets: LiteLlmSecrets,
-): Promise<LiteLlmHandle> {
-  const exec = input.daytonaExec ?? defaultDaytonaExec;
-  const fetchImpl = input.fetchImpl ?? fetch;
-  const sandbox = liteLlmSandboxName();
-  let root = "";
-  let createAttempted = false;
-  try {
-    root = await realpath(await mkdtemp(join(tmpdir(), "openwork-litellm-daytona-")));
-    const dockerfile = join(root, "Dockerfile");
-    await writeFile(dockerfile, DAYTONA_DOCKERFILE, { mode: 0o600 });
-    createAttempted = true;
-    await checkedExec(
-      exec,
-      [
-        "create",
-        "--name", sandbox,
-        "--dockerfile", dockerfile,
-        "--auto-stop", "60",
-        "--auto-delete", "0",
-        "--ttl", "120",
-        "--public",
-        "--target", "us",
-      ],
-      `LiteLLM sandbox creation gate for ${sandbox}`,
-      { timeoutMs: 300_000 },
-    );
-    await rm(root, { recursive: true, force: true });
-    root = "";
-    await waitForExecReady(exec, sandbox);
-
-    const config = liteLlmConfig(
-      input.modelId,
-      `http://127.0.0.1:${DAYTONA_WITNESS_PORT}/v1`,
-      secrets.masterKey,
-      secrets.upstreamKey,
-      input.maxInputTokens,
-      input.maxOutputTokens,
-    );
-    const uploads = [
-      ...uploadCommands(config, DAYTONA_CONFIG),
-      ...uploadCommands(DAYTONA_WITNESS_SOURCE, DAYTONA_WITNESS),
-    ];
-    for (const [index, command] of uploads.entries()) {
-      await remoteExec(exec, sandbox, command, `LiteLLM upload ${index + 1}/${uploads.length} for ${sandbox}`);
-    }
-    await remoteExec(exec, sandbox, launchCommand({
-      modelId: input.modelId,
-      reply: input.reply,
-      upstreamTokenId: tokenId(secrets.upstreamKey),
-      controlTokenId: tokenId(secrets.controlKey),
-    }), `LiteLLM process launch for ${sandbox}`);
-
-    const [gatewayUrl, controlUrl] = await Promise.all([
-      previewUrl(exec, sandbox, DAYTONA_PROXY_PORT),
-      previewUrl(exec, sandbox, DAYTONA_WITNESS_PORT),
-    ]);
-    await waitForDaytonaReady(fetchImpl, gatewayUrl, controlUrl, input.modelId, secrets);
-    let placementDisposed = false;
-    return makeHandle({
-      ...secrets,
-      baseUrl: `${gatewayUrl}/v1`,
-      controlUrl,
-      fetchImpl,
-      async dispose(): Promise<void> {
-        if (placementDisposed) return;
-        await deleteSandboxes([sandbox], { exec, log: () => undefined });
-        placementDisposed = true;
-      },
-    });
-  } catch (error) {
-    const logs = createAttempted
-      ? await remoteExec(
-        exec,
-        sandbox,
-        `tail -80 ${DAYTONA_WITNESS_LOG} 2>&1 || true; tail -80 ${DAYTONA_LOG} 2>&1 || true`,
-        `LiteLLM failure log capture for ${sandbox}`,
-      ).then((result) => `${result.stdout}${result.stderr}`.slice(-4_000), () => "")
-      : "";
-    if (createAttempted) {
-      await deleteSandboxes([sandbox], { exec, log: () => undefined }).catch(() => undefined);
-    }
-    if (root) await rm(root, { recursive: true, force: true }).catch(() => undefined);
-    throw redactedError(
-      `${messageText(error)}${logs ? `\nDaytona logs:\n${logs}` : ""}`,
-      [secrets.masterKey, secrets.upstreamKey, secrets.controlKey],
-    );
-  }
-}
-
 export async function liteLlm(input: {
-  place: Place;
   modelId: string;
   reply: string;
   database?: boolean;
   maxInputTokens?: number;
   maxOutputTokens?: number;
-  daytonaExec?: DaytonaExec;
-  fetchImpl?: typeof fetch;
 }): Promise<LiteLlmHandle> {
   const secrets: LiteLlmSecrets = {
     masterKey: `sk-openwork-master-${randomBytes(24).toString("hex")}`,
     upstreamKey: `sk-openwork-upstream-${randomBytes(24).toString("hex")}`,
     controlKey: `sk-openwork-control-${randomBytes(24).toString("hex")}`,
   };
-  if (input.database && input.place.kind === "daytona") {
-    throw new SkipError("LiteLLM database mode currently requires docker placement");
-  }
-  const normalizedInput = {
-    ...input,
-    maxInputTokens: positiveTokenLimit(input.maxInputTokens ?? DEFAULT_MAX_INPUT_TOKENS, "maxInputTokens"),
-    maxOutputTokens: positiveTokenLimit(input.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS, "maxOutputTokens"),
-  };
-  return input.place.kind === "daytona"
-    ? startDaytonaLiteLlm(normalizedInput, secrets)
-    : startLocalLiteLlm(normalizedInput, secrets);
+  return startLocalLiteLlm(
+    {
+      modelId: input.modelId,
+      reply: input.reply,
+      database: input.database,
+      maxInputTokens: positiveTokenLimit(input.maxInputTokens ?? DEFAULT_MAX_INPUT_TOKENS, "maxInputTokens"),
+      maxOutputTokens: positiveTokenLimit(input.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS, "maxOutputTokens"),
+    },
+    secrets,
+  );
 }
+
+

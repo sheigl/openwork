@@ -3,7 +3,7 @@ import { localMysqlIsRunning, localRedisIsRunning, needs, server, SkipError, tes
 import { mockPlanetScale } from "@openwork/labs";
 
 test("MCP database read recovery preserves authentication and surfaces persistent failures", { timeout: 300_000 }, async ({ place, evidence }) => {
-  needs({ placement: "local", commands: ["openssl"] });
+  needs({ commands: ["openssl"] });
   if (!await localMysqlIsRunning()) throw new SkipError("MySQL on 127.0.0.1:3306 for isolated Den bootstrap");
   if (!await localRedisIsRunning()) throw new SkipError("Redis on 127.0.0.1:6379");
   await using database = await mockPlanetScale(/from `oauthAccessToken`/);

@@ -82,7 +82,7 @@ This opt-in compiler selects checked-in assertions; it is not an app-state judge
 | --- | --- |
 | world | An executable TypeScript script that creates and holds concrete resources. |
 | receipt | PID ownership metadata for a detached script world. |
-| place | Where launched resources run: `local` or `daytona`. |
+| place | Where launched resources run: `local`. |
 | substrate | What runs the Den control plane: local processes or `kind`. |
 | witness | A deterministic provider stand-in that records what it saw. |
 | fault | Declared misbehavior used to reproduce a failure condition. |
@@ -110,7 +110,6 @@ Skills own mechanics; this README owns the map and vocabulary.
 | Failing or red run | `diagnose-a-red-run` | Classify a failure before changing code. |
 | Missing secret or environment variable | `get-env-var` | Load a required team secret into the shell. |
 | Drive local Electron via CDP | `browser-automation` | Explore or debug the local desktop surface. |
-| Daytona setup or sandbox debugging | `daytona` | Repair the CLI, snapshots, sandboxes, or secrets volume. |
 | Demo artifacts | `record-a-demo` | Capture supplementary screenshots or recordings. |
 
 ## Install and run
@@ -138,12 +137,11 @@ Run the E2E lane with `pnpm evals:e2e [test-names...]`. Naming a test
 auto-satisfies the opt-in flags declared in its source, but value-bearing
 environment variables such as `OPENWORK_EVAL_MODEL` are never auto-set. Vision
 judging is deferred by default; add `--with-llm-vision` to judge inline. Use
-`--local` to force isolated local resources, `--daytona` to require Daytona,
-`--den <url>` to reuse Den, or `--publish --pr <number>` to judge and publish
-existing evidence. Without a placement flag, the CLI probes Daytona auth and
-prints `placement: <daytona|local> (<reason>)` for the placement asserted in the
-runtime environment. `--local` and `--daytona` override inherited placement;
-transport, engine, and surface selectors are never inferred as source opt-ins.
+`--local` to force isolated local resources, `--den <url>` to reuse Den, or
+`--publish --pr <number>` to judge and publish existing evidence. The CLI
+prints `placement: <local|attached> (<reason>)` for the placement asserted in
+the runtime environment. Transport, engine, and surface selectors are never
+inferred as source opt-ins.
 
 Registered cases select a concrete world and can select their engine without
 raw environment variables. `CONT-01` and `SWITCH-10` are fixed headless app-web
@@ -158,25 +156,11 @@ pnpm evals:e2e streamed-markdown-answer --local --engine v2 --case CONT-01
 A focused web case avoids legacy Den/Electron suite preparation, but still
 boots the real Vite app, server, engine, and Chrome; install dependencies first.
 This fast path is not a guarantee for the duration of a first cold install.
-Explicit `--local` placement cannot be overridden by source consent or inherited
-Daytona settings. `--daytona` uses provided slot environment as advanced
-configuration, runs one selected case per sandbox, and checks the immutable
-ref/source guard before launch.
-
-Under Daytona the spec files run from this checkout while the sandbox builds
-`OPENWORK_EVAL_REF` (default `dev`). The CLI resolves that ref against `origin`,
-appends `ref=<ref>` to the placement line, and warns on stderr when it differs
-from the runner `HEAD`; `--strict-ref` (or `OPENWORK_EVAL_STRICT_REF=1`) turns
-the warning into a failure before any sandbox is provisioned. Evidence records
-both commits: `gitSha` is the runner checkout and `sandboxRef` is the ref the
-sandbox built. To test a branch, push it and export
-`OPENWORK_EVAL_REF=$(git rev-parse HEAD)`.
 
 `--case` filters Vitest by the registered literal case prefix. A passing result
 means that selected case passed; other cases in the file are reported as not
 run. A selected skip, unknown result, zero matches, or missing JSON report is
 incomplete; any non-selected case that executes is a contract failure.
-Daytona slot IDs and refs remain advanced environment configuration.
 
 ### Bounded world migration
 
@@ -191,7 +175,7 @@ native variant.
 The case asserts the runtime user agent contains `HeadlessChrome`, that the
 Electron bridge is absent, and that the app origin, server health, and selected
 engine routes match the fixture. Source SHA metadata is recorded and checked
-when available (required on Daytona); this is not a full source receipt or
+when available; this is not a full source receipt or
 proof of uncommitted source contents.
 
 The other cases and legacy worlds in these mixed files, including
@@ -303,8 +287,8 @@ const nativeTest = spec.world(nativeFileDialog, {
 ```
 
 Surfaces, services, and placement are separate: declare `den` and `mock` under
-`services` when the world creates them; choose local or Daytona with the runner's
-placement flags. `seed.web()` drives **Den UI**, not the app, and requires
+`services` when the world creates them. `seed.web()` drives **Den UI**, not the
+app, and requires
 `surfaces: ["web"]` plus `services: ["den"]`. For declared worlds, the resource
 guard refuses an undeclared surface or service before launch, and a desktop
 declaration requires a non-empty `nativeReason`. Undeclared legacy worlds are
@@ -372,7 +356,7 @@ order with text, focus and rectangles, plus viewport/document widths. It never
 returns input values or accepts executable callbacks. Use it for geometry and
 focus assertions after trusted `user.press("Tab")` actions, rather than raw eval.
 
-Worlds can arrange a shaped Den connection with `seed.denLink(den, options)`;
+Worlds can arrange a shaped Den connection with `seed.denLink(den)`;
 the returned link is fixture-owned. `probe.connectState(app)` reads the
 testkit's normalized desktop Connect state without exposing the raw helper to a
 spec.
@@ -402,7 +386,7 @@ executable coverage is always assembled as a test under `specs/`.
 | `@openwork/testkit` | thin Vitest adapter: fixture, needs/skip mapping, evidence bridging, and spec-facing re-exports |
 | `@openwork/cdp` | raw CDP client, targets, `Surface`, and `attachSurface` |
 | `@openwork/labs` | egress, identity-provider, release-feed, and mock-MCP labs |
-| `@openwork/hosts` | local and Daytona hosts and `resolveHost()` |
+| `@openwork/hosts` | local host and `resolveHost()` |
 | `@openwork/behaviors` | framework-free actions and observations over narrow handles |
 | `@openwork/matchers` | pure findings over facts, with no I/O |
 | `@openwork/test-evidence` | screenshot capture, visual validation, and ambient test-evidence recording used by testkit |
@@ -494,10 +478,6 @@ opt-in proof on a machine with local Docker, kind, kubectl, and Helm:
 OPENWORK_EVAL_E2E_TESTS=1 OPENWORK_EVAL_KIND_E2E=1 pnpm --dir evals exec vitest run --config vitest.config.ts --project e2e specs/world-kind-den.e2e.test.ts
 ```
 
-Daytona cannot host this substrate: its sandbox has no Docker binary or daemon,
-reports `CapEff: 0000000000000000`, and blocks `unshare -Urm`, so no container
-runtime can start kind there.
-
 ## Recipes
 
 ### Drive the app
@@ -565,7 +545,7 @@ It also adds the printed `OPENWORK_EVAL_DEN_WEB_URL` to the trusted origins;
 without that origin, Better Auth rejects eval sign-in with
 `403 INVALID_ORIGIN`.
 
-## Daytona E2E tests
+## E2E tests
 
 Run a selected test through the E2E CLI:
 
@@ -573,12 +553,8 @@ Run a selected test through the E2E CLI:
 pnpm evals:e2e app-smoke
 ```
 
-Without a placement flag, the CLI uses Daytona when `daytona snapshot list`
-succeeds and local otherwise, then prints the placement and reason. `--daytona`
-requires Daytona; `--local` forces local.
-
 Use `--engine v1|v2` for a named spec. A registered `--case` selects its concrete
-world; the migrated cases use headless app-web on either placement. Legacy cases
+world; the migrated cases use headless app-web locally. Legacy cases
 in files run without `--case` retain their existing environment-driven behavior.
 The test-evidence header records the selected engine.
 
@@ -610,7 +586,6 @@ These names are designed but not built. Do not attempt to use them:
 
 - `attach.den({ url, tier })`
 - `attach.user({ secretRef })`
-- `attach.sandbox(...)`
 - `tier: "prod" | "staging" | "demo"`; the production tier will structurally
   refuse organization provisioning, seeding, and database access.
 - `secretRef`; secrets will be named and resolved at start. Snapshots may carry
@@ -622,20 +597,7 @@ existing Den at the `server()` level and is called `reuse` in current code.
 Attached mode has no `apiLog()` and does not support `seedProfile`. Locally
 launched mocks are loopback-only and therefore unreachable from a remote Den.
 
-## Daytona reference
-
-### Ports
-
-| Service | Port |
-| --- | ---: |
-| noVNC | 6080 |
-| Vite HMR | 5173 |
-| Electron CDP | 9825 |
-| Den Web | 3005 |
-| Den API | 8788 |
-| Worker proxy | 8789 |
-| Artifacts | 8090 |
-| MySQL (internal) | 3306 |
+## Local reference
 
 ### Electron UI selectors
 
@@ -662,16 +624,6 @@ editor.focus()
 document.execCommand("selectAll", false, null)
 document.execCommand("insertText", false, "YOUR PROMPT HERE")
 ```
-
-### Two-sandbox Den + Electron
-
-```bash
-bash .devcontainer/test-server-on-daytona.sh <ref>
-bash .devcontainer/test-on-daytona.sh <ref> \
-  --den-base-url <DEN_WEB_URL> \
-  --den-api-base-url <DEN_API_URL>
-```
-
 
 ### Type-checked browser code
 

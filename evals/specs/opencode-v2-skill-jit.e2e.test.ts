@@ -12,7 +12,7 @@ import {
 
 const test = spec.world(skillLifecycle, {
   timeout: 900_000,
-  needs: liveOpenAiEnabled() ? { env: ["OPENAI_API_KEY"], daytona: true } : {},
+  needs: liveOpenAiEnabled() ? { env: ["OPENAI_API_KEY"] } : {},
 });
 
 // The engine is selected by the world. The journey does not inspect injected

@@ -38,9 +38,8 @@ export interface DesktopOptions {
   cdpUrl?: string;
   /**
    * Where this desktop runs. Defaults to the ambient host (`resolveHost()`).
-   * Pass one from `localHost()` / `daytonaSandbox(id)` to place it explicitly —
-   * that is the only way a spec can put two desktops in two sandboxes, or the
-   * app and the browser in different places.
+   * Pass one from `localHost()` to place it explicitly, e.g. the app and the
+   * browser in different places.
    */
   host?: Host;
   bootstrap?: {
@@ -57,8 +56,6 @@ export interface DesktopOptions {
   prepareSharedResources?: boolean;
   /** Exact caller-owned Electron profile root, for restart scenarios. */
   profileDir?: string;
-  /** Refuse a pooled sandbox: placement provisions one for this desktop alone. */
-  ownSandbox?: boolean;
   timeoutMs?: number;
 }
 
@@ -186,7 +183,6 @@ export async function desktop(opts: DesktopOptions = {}): Promise<DesktopHandle>
       env: opts.env,
       devCommand: opts.devCommand,
       prepareSharedResources: opts.prepareSharedResources,
-      ownSandbox: opts.ownSandbox,
     });
   }
 

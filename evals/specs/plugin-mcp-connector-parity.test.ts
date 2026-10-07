@@ -9,10 +9,9 @@ import {
   emptyLibraryMcpConnectionForm,
 } from "../../apps/app/src/react-app/domains/settings/library";
 
-const daytona = process.env.OPENWORK_EVAL_DAYTONA?.trim() === "1";
 const attached = Boolean(process.env.OPENWORK_EVAL_DEN_API_URL?.trim());
-const mysqlOpen = daytona || attached || await localMysqlIsRunning();
-const redisOpen = daytona || attached || await localRedisIsRunning();
+const mysqlOpen = attached || await localMysqlIsRunning();
+const redisOpen = attached || await localRedisIsRunning();
 const title = !mysqlOpen
   ? "plugin MCP connector parity skipped — needs MySQL on 127.0.0.1:3306"
   : !redisOpen
@@ -169,7 +168,7 @@ test.skipIf(!mysqlOpen || !redisOpen)(title, { timeout: 300_000 }, async ({ evid
 });
 
 test("persisted GitHub bindings preserve desktop readiness without allowing new anonymous setup or bypassing OAuth execution gates", { timeout: 300_000 }, async ({ evidence, place, skip }) => {
-  needs({ placement: "local" });
+  needs({});
   if (!await localMysqlIsRunning() || !await localRedisIsRunning()) skip("needs: local MySQL and Redis");
   const organizationName = `Legacy Connector ${Date.now().toString(36)}`;
   const encryptionSecret = "legacy-connector-fixture-encryption-key";

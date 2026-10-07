@@ -168,14 +168,8 @@ test.skipIf(!enabled)(title, async ({ evidence, place }) => {
       ...(profileDir === undefined ? {} : { profileDir }),
       env: binPath === undefined ? {} : { OPENWORK_OPENCODE2_BIN: binPath },
     });
-    let workspacePath: string;
-    if (place.kind === "daytona") {
-      if (!app.workspaceRoot) throw new Error("Daytona desktop did not expose its workspace root");
-      workspacePath = `${app.workspaceRoot}/evals-tmp/engine-v2-preview-${Date.now()}`;
-    } else {
-      if (profileDir === undefined) throw new Error("Local desktop profile directory was unavailable");
-      workspacePath = join(profileDir, "workspace");
-    }
+    if (profileDir === undefined) throw new Error("Local desktop profile directory was unavailable");
+    const workspacePath = join(profileDir, "workspace");
     const { workspaceId } = await createAndSelectWorkspace(app, { path: workspacePath });
 
     const defaultStatus = await readStatus(app);

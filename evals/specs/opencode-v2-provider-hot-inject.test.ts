@@ -51,7 +51,7 @@ function sessionId(payload: unknown): string | undefined {
 // Complements the real HTTP proxy + fake readiness cases in opencode-proxy.e2e:
 // this crosses the pinned native engine's storage boundary, not the proxy gate.
 test("V2-STORED-01: cold stored reads survive pending catalog and MCP readiness", { timeout: 60_000 }, async ({ evidence, place }) => {
-  needs({ placement: "local", env: ["OPENWORK_EVAL_OPENCODE2_BIN"] });
+  needs({ env: ["OPENWORK_EVAL_OPENCODE2_BIN"] });
   const binary = process.env.OPENWORK_EVAL_OPENCODE2_BIN;
   if (!binary) throw new Error("A pre-cached native-v2 binary is required; this case never installs one");
   expect((await stat(binary)).isFile()).toBe(true);

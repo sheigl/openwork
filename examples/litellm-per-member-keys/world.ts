@@ -49,7 +49,6 @@ export async function bootLiteLlmPerMember(
   naming?: { stage: string; stageName(base: string): string },
 ): Promise<LiteLlmPerMemberWorld> {
   const gateway = stack.use(await liteLlm({
-    place,
     modelId: LITELLM_WORLD_MODEL,
     reply: REPLY,
     database: true,

@@ -5,7 +5,7 @@ import { expect } from "vitest";
 import { setSidebarBrandTheme, sidebarBrandApp } from "../worlds/sidebar-brand.ts";
 
 test("sidebar brand painted bounds align with the action rail without changing custom branding", async ({ place }) => {
-  needs({ optIn: ["OPENWORK_EVAL_E2E_TESTS"], commands: place.kind === "daytona" ? ["daytona"] : ["pnpm", "bun"] });
+  needs({ optIn: ["OPENWORK_EVAL_E2E_TESTS"], commands: ["pnpm", "bun"] });
   await using app = await sidebarBrandApp(place);
   await waitFor(app, () => Boolean(document.querySelector('[data-sidebar-brand] img')), { timeoutMs: 30_000 });
 

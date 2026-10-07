@@ -1,5 +1,5 @@
 import { denFetch, signIn, type DenSession } from "@openwork/behaviors";
-import { defaultReuseAdmin, localMysqlIsRunning, localRedisIsRunning, needs, personDefaults, queryDenDatabase, SkipError, type Seed } from "@openwork/env";
+import { defaultReuseAdmin, localMysqlIsRunning, localRedisIsRunning, needs, personDefaults, queryDenDatabase, SkipError, type Place, type Seed } from "@openwork/env";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -21,7 +21,7 @@ export function rows(value: unknown): Record<string, unknown>[] {
 }
 
 export async function localInviteNeeds() {
-  needs({ placement: "local" });
+  needs({});
   if (!await localMysqlIsRunning()) throw new SkipError("MySQL on 127.0.0.1:3306");
   if (!await localRedisIsRunning()) throw new SkipError("Redis on 127.0.0.1:6379");
 }
@@ -82,11 +82,11 @@ export function invitationsFor(org: Record<string, unknown>, email: string) {
   return rows(org.invitations).filter((invitation) => invitation.email === email);
 }
 
-export async function orgInvite(seed: Seed, { place }: { place: { kind: "local" | "daytona" } }) {
+export async function orgInvite(seed: Seed, { place }: { place: Place }) {
   const runId = `${Date.now().toString(36)}${process.pid.toString(36)}`;
   const identity = (key: string) => personDefaults(key, undefined, runId);
   const den = await seed.den({
-    ...(place.kind === "daytona" ? { provision: false } : { seedProfile: "demo-org" }),
+    seedProfile: "demo-org",
     env: {
       DEN_ORG_MODE: "multi_org", DEN_REQUIRE_EMAIL_VERIFICATION: "true",
       DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP: "true", OPENWORK_DEV_MODE: "1",

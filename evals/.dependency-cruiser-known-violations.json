@@ -261,19 +261,6 @@
   },
   {
     "type": "dependency",
-    "from": "specs/inference-gateway-web-sync.e2e.test.ts",
-    "to": "@openwork/behaviors",
-    "unresolvedTo": "@openwork/behaviors",
-    "dependencyTypes": [
-      "unknown"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "specs-use-testkit-only"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "specs/library-signed-in-render-stability.e2e.test.ts",
     "to": "@openwork/behaviors",
     "unresolvedTo": "@openwork/behaviors",
@@ -420,19 +407,6 @@
     "from": "specs/queued-messages-restart.e2e.test.ts",
     "to": "@openwork/test-evidence",
     "unresolvedTo": "@openwork/test-evidence",
-    "dependencyTypes": [
-      "unknown"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "specs-use-testkit-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "specs/reauth-popup.e2e.test.ts",
-    "to": "@openwork/behaviors",
-    "unresolvedTo": "@openwork/behaviors",
     "dependencyTypes": [
       "unknown"
     ],

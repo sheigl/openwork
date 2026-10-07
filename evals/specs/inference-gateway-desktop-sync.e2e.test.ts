@@ -225,8 +225,8 @@ test("a gateway provider materializes on the desktop as its own ipr_ provider wi
   onTestFinished(async () => {
     await deleteGatewayProvider(den.admin, orgId, iprId).catch(() => undefined);
   });
-  // Fresh local and Daytona Dens both receive server.env; verify the exact
-  // configured public origin rather than a suffix-only match.
+  // Fresh Dens receive server.env; verify the exact configured public origin
+  // rather than a suffix-only match.
   const { key: memberKey, gatewayUrl, envName, wireModelId } = await memberConnect(member, orgId, iprId, modelId);
   expect(memberKey.startsWith(GATEWAY_KEY_PREFIX)).toBe(true);
   expect(gatewayUrl).toBe(`${GATEWAY_ORIGIN}/api/v1/providers/${iprId}`);

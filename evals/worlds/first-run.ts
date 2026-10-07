@@ -9,31 +9,14 @@ import { SkipError } from "@openwork/env";
 import type { EvalEngine, Place, Seed } from "@openwork/env";
 import { createAndSelectWorkspace, evalIn, go, waitFor as waitForBehavior } from "@openwork/behaviors";
 import { allocateFreePort } from "@openwork/cdp";
-import {
-  checkedExec,
-  chrome,
-  daytonaSandbox,
-  defaultDaytonaExec,
-  deleteSandboxes,
-  desktop,
-  enterpriseTlsEdgeDaytonaCommands,
-  localHost,
-  provisionDesktopSandbox,
-} from "@openwork/hosts";
+import { chrome, desktop, localHost } from "@openwork/hosts";
 import { startEgressLab, startMockMcp } from "@openwork/labs";
 import { diagnoseEgressLabProduct } from "@openwork/behaviors";
 import { configureProvider } from "./chat.ts";
 import { sessionlessTransition } from "./sessionless-transition.ts";
 import { close, listen, readBody, sendJson, sendMockError } from "./openwork-server-cli.ts";
 import { matchVerdictExpectations } from "@openwork/matchers";
-import {
-  completeDesktopHandoff,
-  createDesktopHandoffGrant,
-  ensureMemberSession,
-  readHandoffDeepLink,
-  signIn,
-  signInInBrowser,
-} from "@openwork/behaviors";
+import { createDesktopHandoffGrant } from "@openwork/behaviors";
 
 // Transitional helpers for journeys whose product-specific mechanics do not yet
 // have spec primitives. Specs still import through their owned world module.
@@ -47,16 +30,7 @@ export {
   visibleText,
   waitFor,
 } from "@openwork/behaviors";
-export {
-  checkedExec,
-  chrome,
-  daytonaSandbox,
-  defaultDaytonaExec,
-  deleteSandboxes,
-  desktop,
-  enterpriseTlsEdgeDaytonaCommands,
-  provisionDesktopSandbox,
-} from "@openwork/hosts";
+export { chrome, desktop } from "@openwork/hosts";
 
 export async function emptyInfraWorld(_seed: Seed) {
   return {};
@@ -139,7 +113,6 @@ export async function localFirstRunWorld(seed: Seed) {
     name: "first-run-local",
     signIn: false,
     env: {
-      DAYTONA_SECRETS_ENV: "/tmp/openwork-first-run-no-secrets",
       OPENWORK_DESKTOP_DISTRIBUTION: "public",
       OPENWORK_EVAL_MODEL: "",
       VITE_DISABLE_OPENWORK_MODELS: "0",
@@ -554,13 +527,7 @@ export async function artifactCodeBrowserWorld(seed: Seed) {
     },
     async setCatalogFolderRestricted(restricted: boolean) {
       const path = join(base.workspacePath, "restricted");
-      const mode = restricted ? "000" : "700";
-      const sandbox = base.app.handle.sandboxId;
-      if (sandbox) {
-        await checkedExec(defaultDaytonaExec, remoteCommand(sandbox, `chmod ${mode} ${shellQuote(path)}`), "set synthetic catalog folder permissions");
-      } else {
-        await chmod(path, restricted ? 0 : 0o700);
-      }
+      await chmod(path, restricted ? 0 : 0o700);
     },
   };
 }
@@ -779,17 +746,9 @@ export async function compatibleReleaseWorld(_seed: Seed, { place }: { place: Pl
   return { app, snapshot, async [Symbol.asyncDispose]() { await app.stop(); } };
 }
 
-export async function reliableRecoveryWorld(_seed: Seed, { place }: { place: Place }) {
+export async function reliableRecoveryWorld(_seed: Seed, _opts: { place: Place }) {
   const profileDir = `/tmp/openwork-reliable-recovery-${process.pid}-${Date.now()}`;
-  const provisioned = place.kind === "daytona"
-    ? await provisionDesktopSandbox({
-        ref: process.env.OPENWORK_EVAL_REF?.trim() || process.env.GITHUB_SHA?.trim() || "dev",
-        name: "reliable-app-recovery",
-        reuse: process.env.OPENWORK_EVAL_DAYTONA_SANDBOX?.trim(),
-        log: (line) => console.error(`[openwork/testkit] ${line}`),
-      })
-    : null;
-  const host = provisioned ? daytonaSandbox(provisioned.sandbox) : localHost();
+  const host = localHost();
   const seeded = await desktop({ name: "recovery-profile-seed", host, profileDir });
   const names = await evalIn(seeded, browserScript((value) => (window.__OPENWORK_ELECTRON__.invokeDesktop("workspaceCreate", {
     folderPath: value, name: "reliable-recovery-profile-marker"
@@ -821,18 +780,8 @@ export async function reliableRecoveryWorld(_seed: Seed, { place }: { place: Pla
     workspaceNames,
     async [Symbol.asyncDispose]() {
       await app.stop();
-      if (provisioned) {
-        await checkedExec(
-          defaultDaytonaExec,
-          ["exec", provisioned.sandbox, "--", "rm", "-rf", profileDir],
-          `remove caller-owned recovery profile ${profileDir}`,
-          { timeoutMs: 30_000 },
-        );
-      } else {
-        await rm(profileDir, { recursive: true, force: true });
-      }
+      await rm(profileDir, { recursive: true, force: true });
       await host[Symbol.asyncDispose]();
-      if (provisioned?.created) await deleteSandboxes([provisioned.sandbox]);
     },
   };
 }
@@ -921,146 +870,6 @@ export async function updaterChannelWorld(_seed: Seed) {
       await rm(profileDir, { recursive: true, force: true });
     },
   };
-}
-
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'"'"'`)}'`;
-}
-
-function remoteCommand(sandbox: string, command: string): string[] {
-  return ["exec", sandbox, "--", `bash -lc ${shellQuote(command)}`];
-}
-
-async function cleanup(label: string, action: () => PromiseLike<unknown>): Promise<void> {
-  try {
-    await action();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`[openwork/testkit] ${label} cleanup failed: ${message}`);
-  }
-}
-
-export async function enterpriseTlsWorld(seed: Seed, { place }: { place: Place }) {
-  const den = await seed.den();
-  const provisioned = await provisionDesktopSandbox({
-    ref: process.env.OPENWORK_EVAL_REF?.trim() || process.env.GITHUB_SHA?.trim() || "dev",
-    name: "den-behind-enterprise-tls",
-    reuse: process.env.OPENWORK_EVAL_DAYTONA_SANDBOX?.trim(),
-    log: (line) => console.error(`[openwork/testkit] ${line}`),
-  });
-  const profileDir = `/workspace/.openwork-daytona/profiles/enterprise-tls-${process.pid}-${Date.now()}`;
-  const edge = enterpriseTlsEdgeDaytonaCommands({ sandboxId: provisioned.sandbox, upstream: den.ref.webUrl });
-  let edgeStarted = false;
-  let rootInstallAttempted = false;
-  let rawApp: Awaited<ReturnType<typeof desktop>> | null = null;
-  let trustedApp: Awaited<ReturnType<typeof startApp>> | null = null;
-  const host = daytonaSandbox(provisioned.sandbox);
-
-  const dispose = async () => {
-    if (trustedApp) await cleanup("dispose trusted enterprise TLS app", () => trustedApp?.[Symbol.asyncDispose]() ?? Promise.resolve());
-    if (rawApp) await cleanup("dispose pre-trust enterprise TLS app", () => rawApp?.stop() ?? Promise.resolve());
-    await cleanup("remove caller-owned enterprise TLS profile", () => checkedExec(
-      defaultDaytonaExec,
-      ["exec", provisioned.sandbox, "--", "rm", "-rf", profileDir],
-      `remove caller-owned profile ${profileDir}`,
-      { timeoutMs: 30_000 },
-    ));
-    if (rootInstallAttempted) {
-      await cleanup("remove enterprise TLS root", () => checkedExec(defaultDaytonaExec, edge.removeRoot, "remove enterprise TLS root", { timeoutMs: 120_000 }));
-    }
-    if (edgeStarted) {
-      await cleanup("stop enterprise TLS edge", () => checkedExec(defaultDaytonaExec, edge.stop, "stop enterprise TLS edge", { timeoutMs: 30_000 }));
-    }
-    await cleanup("dispose Daytona desktop host", () => host[Symbol.asyncDispose]());
-    if (provisioned.created) await cleanup("delete Daytona desktop sandbox", () => deleteSandboxes([provisioned.sandbox]));
-  };
-
-  try {
-    for (const [index, command] of edge.prepare.entries()) {
-      await checkedExec(defaultDaytonaExec, command, `prepare enterprise TLS edge chunk ${index + 1}/${edge.prepare.length}`, { timeoutMs: 30_000 });
-    }
-    await checkedExec(defaultDaytonaExec, edge.start, "start enterprise TLS edge", { timeoutMs: 120_000 });
-    edgeStarted = true;
-    await checkedExec(defaultDaytonaExec, edge.probe, "probe enterprise TLS edge", { timeoutMs: 30_000 });
-    rawApp = await desktop({
-      name: "enterprise-tls-before-os-trust",
-      host,
-      profileDir,
-      bootstrap: { baseUrl: edge.candidateUrl, requireSignin: false },
-    });
-    // TODO(primitive): seed a named workspace in a caller-owned desktop profile.
-    const seededWorkspaceNames = await seed.evalIn(
-      rawApp,
-      browserScript((folderPath) => window.__OPENWORK_ELECTRON__.invokeDesktop("workspaceCreate", {
-        folderPath,
-        name: "enterprise-tls-profile-continuity"
-      }).then((state) => state.workspaces.map((workspace) => workspace.displayName)), [`${profileDir}/continuity-workspace`]),
-      { awaitPromise: true },
-    );
-    if (!Array.isArray(seededWorkspaceNames) || !seededWorkspaceNames.includes("enterprise-tls-profile-continuity")) {
-      throw new Error("Could not seed the enterprise TLS continuity workspace.");
-    }
-    await waitForBehavior(
-      rawApp,
-      () => (window.__openworkControl?.listActions?.().some((action) => action.id === "auth.exchange-grant")),
-      { timeoutMs: 60_000, label: "pre-trust sign-in reachability action" },
-    );
-    const grant = await createDesktopHandoffGrant(den.admin);
-    const app = rawApp;
-    return {
-      app,
-      den,
-      edge,
-      grant,
-      profileDir,
-      async installTrust() {
-        await app.stop();
-        rawApp = null;
-        rootInstallAttempted = true;
-        await checkedExec(
-          defaultDaytonaExec,
-          edge.installRoot,
-          "ENTERPRISE_TLS_ROOT_INSTALL_REQUIRED (root and update-ca-certificates)",
-          { timeoutMs: 120_000 },
-        );
-        const candidateDen = { ...den, ref: { webUrl: edge.candidateUrl, apiUrl: `${edge.candidateUrl}/api/den` } };
-        trustedApp = await startApp({ den: candidateDen, as: "admin", place, host, profileDir });
-        return trustedApp;
-      },
-      inspectBundle() {
-        const bundlePath = `${profileDir}/electron-userdata/system-ca-bundle.pem`;
-        return checkedExec(
-          defaultDaytonaExec,
-          remoteCommand(provisioned.sandbox, [
-            "set -euo pipefail",
-            `test -s ${shellQuote(bundlePath)}`,
-            `/usr/bin/openssl crl2pkcs7 -nocrl -certfile ${shellQuote(bundlePath)} | /usr/bin/openssl pkcs7 -print_certs -noout`,
-          ].join("; ")),
-          "inspect product-generated profile system CA bundle",
-          { timeoutMs: 30_000 },
-        );
-      },
-      probeSelectiveTrust(encodedProbe: string) {
-        const bundlePath = `${profileDir}/electron-userdata/system-ca-bundle.pem`;
-        return checkedExec(
-          defaultDaytonaExec,
-          remoteCommand(
-            provisioned.sandbox,
-            `export NODE_EXTRA_CA_CERTS=${shellQuote(bundlePath)}; /usr/bin/env node --input-type=module -e "\$(printf %s ${shellQuote(encodedProbe)} | base64 -d)" ${shellQuote(edge.candidateUrl)} ${shellQuote(edge.negativeUrl)}`,
-          ),
-          "probe selective trust with product-generated CA bundle",
-          { timeoutMs: 30_000 },
-        );
-      },
-      readEdgeRequests() {
-        return checkedExec(defaultDaytonaExec, edge.requests, "read enterprise TLS edge requests", { timeoutMs: 30_000 });
-      },
-      [Symbol.asyncDispose]: dispose,
-    };
-  } catch (error) {
-    await dispose();
-    throw error;
-  }
 }
 
 export async function appDenTlsFaultWorld(_seed: Seed, { place }: { place: Place }) {

@@ -5,8 +5,6 @@ export interface TestNeeds {
   env?: string[];
   optIn?: string[];
   commands?: string[];
-  daytona?: boolean;
-  placement?: "daytona" | "local";
   /** Host operating system the journey needs (for example native AppKit needs "darwin"). */
   platform?: NodeJS.Platform;
 }
@@ -50,18 +48,6 @@ export function unmetNeeds(requirements: TestNeeds, env: NodeJS.ProcessEnv): str
     }
   }
   if (requirements.platform && process.platform !== requirements.platform) missing.push(`run on ${requirements.platform}`);
-  if (requirements.daytona && env.OPENWORK_EVAL_DAYTONA?.trim() !== "1") {
-    missing.push("set OPENWORK_EVAL_DAYTONA=1");
-  }
-  if (requirements.placement === "daytona" && env.OPENWORK_EVAL_DAYTONA?.trim() !== "1") {
-    missing.push("set OPENWORK_EVAL_DAYTONA=1");
-  }
-  if (
-    requirements.placement === "local"
-    && (env.OPENWORK_EVAL_DAYTONA?.trim() === "1" || present(env, "OPENWORK_EVAL_DEN_API_URL"))
-  ) {
-    missing.push("use local placement without OPENWORK_EVAL_DEN_API_URL");
-  }
   return missing;
 }
 

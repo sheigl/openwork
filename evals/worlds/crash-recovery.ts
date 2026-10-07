@@ -69,7 +69,7 @@ export async function crashRecoveryWorld(_seed: Seed, { place }: { place: Place 
     async observe(label: string) { const state = await snapshot(); observations.push({ label, state }); return state; },
     async [Symbol.asyncDispose]() {
       try {
-        await writeFile(`${build.output}/browser-${id}.json`, JSON.stringify({ id, startedAt, endedAt: new Date().toISOString(), sourceHash: build.manifest.sourceHash, profile: app.handle.profileDir, sandbox: app.handle.sandboxId, observations, requests, interceptionErrors }, null, 2));
+        await writeFile(`${build.output}/browser-${id}.json`, JSON.stringify({ id, startedAt, endedAt: new Date().toISOString(), sourceHash: build.manifest.sourceHash, profile: app.handle.profileDir, observations, requests, interceptionErrors }, null, 2));
       } finally { socket.close(); await app.stop(); }
     },
   };

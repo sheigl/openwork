@@ -4,7 +4,7 @@ import { desktopUpdateCheckNowWorld } from "../worlds/desktop-update-check-now.t
 
 const test = spec.world(desktopUpdateCheckNowWorld, {
   resources: { surfaces: ["desktop"], services: [], nativeReason: "The Electron renderer owns Settings updates and the unchanged titlebar restart capsule." },
-  needs: { placement: "local" },
+  needs: {},
   timeout: 180_000,
 });
 

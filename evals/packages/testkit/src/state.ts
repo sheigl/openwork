@@ -1,8 +1,8 @@
 import { browserScript } from "@openwork/cdp";
 import { readFile } from "node:fs/promises";
-import { join, posix } from "node:path";
+import { join } from "node:path";
 import { evalIn } from "@openwork/behaviors";
-import { defaultDaytonaExec, electronProfilePaths, execInSandbox } from "@openwork/hosts";
+import { electronProfilePaths } from "@openwork/hosts";
 import type { Surface } from "@openwork/cdp";
 
 export interface DenClientState {
@@ -201,54 +201,28 @@ export async function readCloudMcpHealth(
 }
 
 /** Reads the caller-visible profile filesystem. */
-export async function readConnectStateFile(
-  app: Surface,
-  deps?: { exec?: (sandbox: string, script: string) => Promise<string> },
-): Promise<ConnectStateFile> {
-  if (app.handle.hostKind !== "local" && app.handle.hostKind !== "daytona") {
-    throw new Error(`readConnectStateFile supports local and daytona app profiles; received ${app.handle.hostKind}.`);
+export async function readConnectStateFile(app: Surface): Promise<ConnectStateFile> {
+  if (app.handle.hostKind !== "local") {
+    throw new Error(`readConnectStateFile supports local app profiles; received ${app.handle.hostKind}.`);
   }
-  if (!app.handle.profileDir) throw new Error(`The ${app.handle.hostKind} app did not expose its profile directory.`);
+  if (!app.handle.profileDir) throw new Error("The local app did not expose its profile directory.");
   // The local server persists runtime state next to its config file
   // (`openworkConfigDir()`). The dev-mode desktop redirects that XDG config
   // root under its Electron userData dir (`<userData>/openwork-dev-data/xdg/config`),
   // so probe the known layouts in order.
   const paths = electronProfilePaths(app.handle.profileDir);
-  const pathJoin = app.handle.hostKind === "daytona" ? posix.join : join;
   const candidates = [
-    pathJoin(paths.userDataDir, "openwork-dev-data", "xdg", "config", "openwork", "connect-state.json"),
-    pathJoin(paths.configHome, "openwork", "connect-state.json"),
-    pathJoin(paths.homeDir, ".config", "openwork", "connect-state.json"),
+    join(paths.userDataDir, "openwork-dev-data", "xdg", "config", "openwork", "connect-state.json"),
+    join(paths.configHome, "openwork", "connect-state.json"),
+    join(paths.homeDir, ".config", "openwork", "connect-state.json"),
   ];
   let text: string | null = null;
-  if (app.handle.hostKind === "daytona") {
-    if (!app.handle.sandboxId) throw new Error("The daytona app did not expose its sandbox ID.");
-    const sandbox = app.handle.sandboxId;
-    const exec = deps?.exec ?? (async (sandboxId: string, script: string): Promise<string> => {
-      const result = await execInSandbox(defaultDaytonaExec, sandboxId, script, {
-        timeoutMs: 30_000,
-        context: `connect-state read for ${sandboxId}`,
-      });
-      return result.stdout;
-    });
-    for (const path of candidates) {
-      if (!/^\/[A-Za-z0-9._/-]+$/.test(path)) {
-        throw new Error(`Unsafe connect-state path ${JSON.stringify(path)}: only absolute paths containing letters, digits and . _ / - are allowed.`);
-      }
-      const output = await exec(sandbox, `if [ -f "${path}" ]; then cat "${path}"; else echo __OPENWORK_TESTKIT_MISSING__; fi`);
-      if (output.trim() !== "__OPENWORK_TESTKIT_MISSING__") {
-        text = output;
-        break;
-      }
-    }
-  } else {
-    for (const path of candidates) {
-      try {
-        text = await readFile(path, "utf8");
-        break;
-      } catch (error) {
-        if (errorCode(error) !== "ENOENT") throw error;
-      }
+  for (const path of candidates) {
+    try {
+      text = await readFile(path, "utf8");
+      break;
+    } catch (error) {
+      if (errorCode(error) !== "ENOENT") throw error;
     }
   }
   if (text === null) return { status: "missing", connectEnabled: null };

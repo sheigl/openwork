@@ -1281,7 +1281,7 @@ export const streamedMarkdownAnswer = [
 
 /**
  * The answer arrives in small content deltas from the shared agent mock, which
- * the placement boots next to Den so the engine can reach it on Daytona too.
+ * the placement boots next to Den.
  */
 export async function streamedMarkdown(seed: Seed) {
   const providerId = "streamed-markdown-mock";

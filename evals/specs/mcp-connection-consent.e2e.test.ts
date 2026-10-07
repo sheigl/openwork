@@ -4,7 +4,7 @@ import { consentCases, mcpConnectionConsent } from "../worlds/mcp-connection-con
 
 const test = spec.world(mcpConnectionConsent, {
   timeout: 300_000,
-  needs: { commands: ["bun", "pnpm"], placement: "local" },
+  needs: { commands: ["bun", "pnpm"] },
   resources: { surfaces: ["web"], services: ["den", "mock"] },
 });
 

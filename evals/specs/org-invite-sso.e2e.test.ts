@@ -4,7 +4,7 @@ import { ssoInvite } from "../worlds/den.ts";
 import { invitationWitnesses, invitationsFor, membersFor, rows } from "../worlds/org-invite.ts";
 
 for (const mismatch of [false, true]) {
-  const test = spec.world((seed) => ssoInvite(seed, { mismatchedEmail: mismatch, role: "admin" }), { resources: { surfaces: ["web"], services: ["den", "mock"] }, needs: { placement: "local" }, timeout: 600_000 });
+  const test = spec.world((seed) => ssoInvite(seed, { mismatchedEmail: mismatch, role: "admin" }), { resources: { surfaces: ["web"], services: ["den", "mock"] }, needs: {}, timeout: 600_000 });
 
   test(`SSO-enforced invitation ${mismatch ? "rejects a different IdP email without consuming the invite" : "joins the matching IdP email with the invited role"}`, async ({ world, user, probe, step }) => {
     const witnesses = invitationWitnesses(world.den.admin);

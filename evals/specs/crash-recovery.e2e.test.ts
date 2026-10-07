@@ -6,9 +6,9 @@ import type { CrashRecoveryWorld } from '../worlds/crash-recovery.ts';
 import type { RecoverySnapshot } from '../fixtures/crash-recovery/state.ts';
 
 const test = spec.world(crashRecoveryWorld, {
-  // Each test provisions a fresh Chrome sandbox and installs dependencies; Daytona has needed over 90 s.
+  // Each test provisions a fresh Chrome and installs dependencies; allow a generous window.
   timeout: 300_000,
-  needs: { commands: ['git', ...(process.env.OPENWORK_EVAL_DAYTONA === '1' ? ['daytona'] : [])] },
+  needs: { commands: ['git'] },
   // Real app source in a standalone Chrome; no Den, mock services or Electron.
   resources: { surfaces: ['appWeb'], services: [] },
 });

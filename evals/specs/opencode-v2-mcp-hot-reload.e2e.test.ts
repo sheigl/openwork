@@ -30,7 +30,7 @@ async function request(surface: Surface, path: string, method = "GET", body?: un
 
 test("v2 uses an MCP added through OpenWork on the next call and removes it in the same conversation", { timeout: 20 * 60_000 }, async ({ place, evidence }) => {
   const live = liveOpenAiEnabled();
-  needs({ optIn: ["OPENWORK_EVAL_E2E_TESTS"], ...(live ? { env: ["OPENAI_API_KEY"], daytona: true } : {}) });
+  needs({ optIn: ["OPENWORK_EVAL_E2E_TESTS"], ...(live ? { env: ["OPENAI_API_KEY"] } : {}) });
   const nonce = `REPORT-${Date.now()}`;
   await using den = await server({
     place,
@@ -201,7 +201,7 @@ test("v2 uses an MCP added through OpenWork on the next call and removes it in t
       expect((await api(`${root}/mcp/reload-witness`, "DELETE")).status).toBe(200);
     }
     evidence.recordAssertionEvidence("real OpenAI discovers live MCP changes across repeated lifecycle cycles",
-      `${modelId} made unscripted model/tool calls from the Daytona v2 process after managed credential delivery. Two reconnect/disable/enable cycles served actual MCP calls only while enabled, with the original session and process. The credential was absent from all observed public responses.`, true);
+      `${modelId} made unscripted model/tool calls from the v2 process after managed credential delivery. Two reconnect/disable/enable cycles served actual MCP calls only while enabled, with the original session and process. The credential was absent from all observed public responses.`, true);
   }
   expect((await request(desktop, `${root}/opencode/global/health`)).status).toBe(200);
   evidence.recordAssertionEvidence("removal reaches the next call and v1 remains available", (live ? "Real OpenAI reported UNAVAILABLE after DELETE; " : "A fresh Code Mode attempt to invoke the removed tool returned the explicit Unknown tool 'reload-witness.read_report' error after DELETE; ") + "the native catalog no longer contained the connection and the original conversation served no new MCP calls. The same v2 process and the v1 health endpoint remained available. Direct v2 MCP mutation was denied.", true);

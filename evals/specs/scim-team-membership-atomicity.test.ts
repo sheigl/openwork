@@ -64,7 +64,7 @@ test("SCIM projection ownership is atomic and detached manual teams reject later
     const patch = (operations) => scim('/' + group.id, 'PATCH', { schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'], Operations: operations });
     const add = (value) => patch([{ op: 'add', path: 'members', value: [{ value }] }]);
     const [[databaseVersion]] = await db.query('SELECT VERSION() AS version');
-    // Daytona's server snapshot uses MariaDB; retain the same wait-edge proof
+    // The server may run MariaDB; retain the same wait-edge proof
     // using its InnoDB catalog rather than MySQL 8's performance-schema catalog.
     const waitForBlocker = async (id) => {
       const deadline = Date.now() + 10000;

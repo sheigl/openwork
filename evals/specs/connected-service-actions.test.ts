@@ -22,7 +22,7 @@ function text(value: unknown): string {
 // OAuth/discovery journeys do not cover this management journey: a member
 // selects one native account and performs actual provider mutations via MCP.
 test("connected service actions reach only the selected account and enforce write boundaries", { timeout: 300_000 }, async ({ place, evidence }) => {
-  needs({ commands: ["bun", "pnpm"], placement: "local" });
+  needs({ commands: ["bun", "pnpm"] });
   const primary = "primary@example.test";
   const selected = "selected@example.test";
   const readonly = "readonly@example.test";

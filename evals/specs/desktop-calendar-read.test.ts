@@ -9,7 +9,7 @@ import { stopChild } from "../worlds/openwork-server-cli.ts";
 // Keep the real desktop HTTP boundary; native Cloud Calendar coverage lives in
 // den-api/test/google-workspace-capabilities.test.ts, not this retired extension.
 async function calendarServer(cloudMember = false) {
-  needs({ commands: ["bun"], placement: "local" });
+  needs({ commands: ["bun"] });
   const root = await mkdtemp(join(tmpdir(), "google-retirement-"));
   const repo = resolve(import.meta.dirname, "../..");
   const config = join(root, "server.json");

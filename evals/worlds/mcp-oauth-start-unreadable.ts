@@ -25,7 +25,7 @@ export async function oauthStartUnreadableWeb(seed: Seed, ctx: { place: Place })
   if (ctx.place.kind !== "local") throw new Error("This world fixes a local fault proxy in front of den-api before boot; run it on the local lane.");
   const [apiPort, webPort, providerPort] = await allocateFreePorts(3);
   const denApiUrl = `http://127.0.0.1:${apiPort}`;
-  const proxy = await startFaultProxy({ apiUrl: denApiUrl, webUrl: denApiUrl }, { place: ctx.place });
+  const proxy = await startFaultProxy({ apiUrl: denApiUrl, webUrl: denApiUrl });
   let provider: MockHandle = (await mcpMock({ port: providerPort }).boot(ctx.place)).handle;
   const den = await seed.den({
     ports: { api: apiPort, web: webPort },

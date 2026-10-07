@@ -15,9 +15,7 @@ Run just this spec locally with Node 24+ and a Chrome/Chromium installation:
 OPENWORK_EVAL_E2E_TESTS=1 pnpm --dir evals exec vitest run --config fixtures/crash-recovery/vitest.config.ts specs/crash-recovery.e2e.test.ts
 ```
 
-For Daytona, add `OPENWORK_EVAL_DAYTONA=1`. The normal testkit placement owns
-provisioning and disposal; to reuse an already owned runner, also set
-`OPENWORK_EVAL_DAYTONA_DESKTOP_SANDBOX` to its ID/name. Every test still owns and
+Every test owns and
 disposes a fresh Chrome profile through `spec.world` and `chrome`. This fixture
 does not need Den, Electron or a staged HTTP server. The dedicated config avoids
 unrelated full-stack setup while preserving the E2E opt-in and capability APIs.

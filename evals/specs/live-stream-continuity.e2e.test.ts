@@ -9,7 +9,7 @@ import { chatStreamContinuityLiveWeb, liveContinuityPrompt } from "../worlds/cha
 // Scope: paid OpenAI, local web/native v1, initially empty neighbor; not guide accuracy, v2, or cross-account isolation.
 const liveContinuityTest = spec.world(chatStreamContinuityLiveWeb, {
   timeout: 480_000,
-  needs: { placement: "local", optIn: ["OPENWORK_EVAL_LIVE_OPENAI"], env: ["OPENAI_API_KEY"] },
+  needs: { optIn: ["OPENWORK_EVAL_LIVE_OPENAI"], env: ["OPENAI_API_KEY"] },
   resources: { surfaces: ["appWeb"], services: [] },
 });
 

@@ -16,11 +16,7 @@ export function browserScriptValue(value: unknown): string {
 /** Execute on the desktop host, keeping loopback endpoints and tokens there. */
 export async function runBrowserHost(app: Surface, source: string): Promise<unknown> {
   const program = `try { const result = await (async () => { ${source} })(); console.log('BROWSER_RESULT='+JSON.stringify(result)); } catch { console.log('BROWSER_RESULT='+JSON.stringify({error:'browser_host_failure'})); process.exitCode=1; }`;
-  const sandbox = app.handle.hostKind === "daytona" ? app.handle.sandboxId : undefined;
-  if (app.handle.hostKind === "daytona" && !sandbox) throw new Error("Missing desktop sandbox.");
-  const result = sandbox
-    ? await exec("daytona", ["exec", sandbox, "--", `node --input-type=module -e '${program.replace(/'/g, "'\"'\"'")}'`], { timeout: 90_000, maxBuffer: 8_000_000 })
-    : await exec(process.execPath, ["--input-type=module", "-e", program], { timeout: 90_000, maxBuffer: 8_000_000 });
+  const result = await exec(process.execPath, ["--input-type=module", "-e", program], { timeout: 90_000, maxBuffer: 8_000_000 });
   const line = result.stdout.split("\n").find((item) => item.startsWith("BROWSER_RESULT="));
   if (!line) throw new Error("The desktop host returned no browser result.");
   return JSON.parse(line.slice("BROWSER_RESULT=".length));

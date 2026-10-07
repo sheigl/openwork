@@ -35,9 +35,8 @@ import {
 import type { App, DenClientState, FaultProxy, FaultRequest } from "@openwork/testkit";
 
 const e2eTestsEnabled = process.env.OPENWORK_EVAL_E2E_TESTS === "1";
-const daytonaEnabled = process.env.OPENWORK_EVAL_DAYTONA === "1";
 const configuredDen = Boolean(process.env.OPENWORK_EVAL_DEN_API_URL?.trim());
-const localMysqlRequired = !daytonaEnabled && !configuredDen;
+const localMysqlRequired = !configuredDen;
 const mysqlOpen = await localMysqlIsRunning();
 const runnable = e2eTestsEnabled && (!localMysqlRequired || mysqlOpen);
 
@@ -300,10 +299,7 @@ test.skipIf(!runnable)(
         members: { member: { name: "Storm Member" } },
       },
     });
-    await using proxy = await faultProxy(den.ref, {
-      place,
-      sandbox: den.placement?.kind === "daytona" ? den.placement.sandboxId : undefined,
-    });
+    await using proxy = await faultProxy(den.ref);
     await using desktopApp = await app({ den: { ...den, ref: proxy.ref }, as: "member", place });
 
     const baseline = await healthyBaseline(desktopApp);
@@ -383,10 +379,7 @@ test.skipIf(!runnable)(
         members: { member: { name: "Overload Member" } },
       },
     });
-    await using proxy = await faultProxy(den.ref, {
-      place,
-      sandbox: den.placement?.kind === "daytona" ? den.placement.sandboxId : undefined,
-    });
+    await using proxy = await faultProxy(den.ref);
     await using desktopApp = await app({ den: { ...den, ref: proxy.ref }, as: "member", place });
 
     const baseline = await healthyBaseline(desktopApp);
@@ -482,10 +475,7 @@ test.skipIf(!runnable)(
         members: { member: { name: "Race Member" } },
       },
     });
-    await using proxy = await faultProxy(den.ref, {
-      place,
-      sandbox: den.placement?.kind === "daytona" ? den.placement.sandboxId : undefined,
-    });
+    await using proxy = await faultProxy(den.ref);
     await using desktopApp = await app({ den: { ...den, ref: proxy.ref }, as: "member", place });
 
     const baseline = await healthyBaseline(desktopApp);

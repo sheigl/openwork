@@ -3,7 +3,7 @@ import { denOAuthErrorPage } from "../worlds/den-oauth-error-page.ts";
 
 const test = spec.world(denOAuthErrorPage, {
   timeout: 300_000,
-  needs: { commands: ["bun", "pnpm"], placement: "local" },
+  needs: { commands: ["bun", "pnpm"] },
   resources: { surfaces: ["web"], services: ["den"] },
 });
 

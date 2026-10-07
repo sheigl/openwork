@@ -7,7 +7,7 @@ import { engineParity } from "../worlds/engine-parity.ts";
 const test = spec.world(engineParity, {
   timeout: 420_000,
   resources: { surfaces: ["appWeb"], services: ["mock"] },
-  needs: { placement: "local", env: ["OPENWORK_EVAL_ENGINE"] },
+  needs: { env: ["OPENWORK_EVAL_ENGINE"] },
 });
 
 test(`PARITY-STREAM ${resolveEvalEngine()}: read the beginning of an answer before the model finishes`, async ({ world, user, probe, step, evidence }) => {

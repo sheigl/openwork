@@ -7,7 +7,7 @@ import { oauthStartUnreadableWeb } from "../worlds/mcp-oauth-start-unreadable.ts
 // provider refusing OpenWork's redirect URI each receive actionable language
 // there while the dashboard keeps its inline error. Once the provider accepts
 // the redirect URI, the same button starts provider sign-in.
-const test = spec.world(oauthStartUnreadableWeb, { timeout: 600_000, needs: { optIn: ["OPENWORK_EVAL_E2E_TESTS"], placement: "local" } });
+const test = spec.world(oauthStartUnreadableWeb, { timeout: 600_000, needs: { optIn: ["OPENWORK_EVAL_E2E_TESTS"] } });
 
 const unreadableMessage = /OpenWork could not read the answer from its API when starting the sign-in/;
 const connectButton = { role: "button", label: "Connect" } as const;

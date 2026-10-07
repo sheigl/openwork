@@ -14,7 +14,7 @@ const cases = [
 
 for (const [claim, file] of cases) {
   test(`crash redaction protects ${claim}`, async ({ evidence }) => {
-    needs({ commands: ["bun"], placement: "local" });
+    needs({ commands: ["bun"] });
     const result = spawnSync("bun", ["test", file], {
       cwd: appDirectory,
       encoding: "utf8",

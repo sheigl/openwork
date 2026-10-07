@@ -20,7 +20,6 @@ export interface SurfaceHandle {
   cdpUrl: string;
   pid?: number;
   profileDir?: string;
-  sandboxId?: string;
   meta?: Record<string, string>;
   /** Settles when the process this host spawned exits; absent for surfaces on remote hosts. */
   exit?: Promise<SurfaceExit>;

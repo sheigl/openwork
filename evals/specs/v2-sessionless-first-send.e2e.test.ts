@@ -257,7 +257,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 const outageTest = spec.world(localSendDenOutageWorld, {
   timeout: 420_000,
   resources: { surfaces: ["appWeb"], services: ["mock"] },
-  needs: { placement: "local" },
+  needs: {},
 });
 
 outageTest("DEN-LOCAL-SEND configured v1 identity sends to inference while Den is unavailable", async ({ world, user, probe, evidence }) => {

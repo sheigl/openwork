@@ -2,7 +2,7 @@ import type { BrowserEvaluation, EvaluateOptions } from "@openwork/cdp";
 import type { DenFetchResult, DenSession, NativeConnectorInput } from "@openwork/behaviors";
 import type { AttachedSurface, Surface } from "@openwork/cdp";
 import type { StartMockMcpOptions } from "@openwork/labs";
-import type { DaytonaExec, DesktopHandle } from "@openwork/hosts";
+import type { DesktopHandle } from "@openwork/hosts";
 import type { App } from "./desktop-app.ts";
 import type { AppWeb, SeedAppWebOptions } from "./app-web.ts";
 import type { Den, ServerOptions } from "./den-contract.ts";
@@ -21,8 +21,6 @@ export interface SeedDesktopOptions {
   name?: string;
   /** Extra environment for this isolated Electron process. */
   env?: Record<string, string>;
-  /** Refuse the pooled lane's shared sandbox; this desktop gets one of its own. */
-  ownSandbox?: boolean;
   /** With a Den: `false` signs in without creating a workspace (a member who has not made one yet). */
   workspace?: false;
 }
@@ -44,21 +42,12 @@ export interface OrgConnectionInput {
 }
 
 export type SeedDenLinkProfile = "baseline" | "vpn-flaky-emulated";
-export type SeedDenLinkClient = "public-preview" | "sandbox-loopback";
 export type SeedDenLinkRule = { pathPrefix?: string; times?: number; everyNth?: number } & (
   | { kind: "latency"; delayMs: number; jitterMs?: number }
   | { kind: "status"; statusCode: number; body?: unknown }
   | { kind: "reset" }
   | { kind: "stall" }
 );
-
-export interface SeedDenLinkOptions {
-  sandboxId?: string;
-  client?: SeedDenLinkClient;
-  port?: number;
-  adminPort?: number;
-  daytonaExec?: DaytonaExec;
-}
 
 export interface SeedDenLink extends AsyncDisposable {
   ref: Den["ref"];
@@ -116,7 +105,7 @@ export interface Seed {
   nativeConnector(admin: DenSession, input: NativeConnectorInput): Promise<{ id: string; name: string }>;
   mock(options?: StartMockMcpOptions): MockBoot;
   faultProxy(den: Den): Promise<FaultProxy>;
-  denLink(den: Den, options?: SeedDenLinkOptions): Promise<SeedDenLink>;
+  denLink(den: Den): Promise<SeedDenLink>;
   tmpPath(label: string): string;
   composerText(app: Surface, text: string): Promise<void>;
   /** Deliver a fixture-owned link at the renderer ingress; does not exercise OS protocol registration. */

@@ -8,10 +8,9 @@ import { denFetch } from "@openwork/behaviors";
 import type { DenSession } from "@openwork/behaviors";
 import { localMysqlIsRunning, localRedisIsRunning, mcpMock, server, test } from "@openwork/testkit";
 
-const daytona = process.env.OPENWORK_EVAL_DAYTONA?.trim() === "1";
 const attached = Boolean(process.env.OPENWORK_EVAL_DEN_API_URL?.trim());
-const mysqlOpen = daytona || attached || await localMysqlIsRunning();
-const redisOpen = daytona || attached || await localRedisIsRunning();
+const mysqlOpen = attached || await localMysqlIsRunning();
+const redisOpen = attached || await localRedisIsRunning();
 const title = !mysqlOpen
   ? "declarative MCP connection API skipped — needs MySQL on 127.0.0.1:3306"
   : !redisOpen

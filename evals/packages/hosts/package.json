@@ -9,11 +9,6 @@
       "development": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./daytona": {
-      "types": "./src/daytona.ts",
-      "development": "./src/daytona.ts",
-      "default": "./src/daytona.ts"
-    },
     "./eval-engine": {
       "types": "./src/eval-engine.ts",
       "development": "./src/eval-engine.ts",

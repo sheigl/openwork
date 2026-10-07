@@ -9,9 +9,8 @@ function record(value: unknown): Record<string, unknown> {
 /**
  * An owner and a teammate in one org on a Den with the AI Gateway deployed.
  * The journey is the Den admin form, so no request ever reaches the gateway:
- * locally the proxy URLs only satisfy den-api's GATEWAY_ENABLED boot check and
- * point at a closed port; on Daytona the provisioner starts the real gateway
- * next to Den and derives its URLs itself.
+ * the proxy URLs only satisfy den-api's GATEWAY_ENABLED boot check and
+ * point at a closed port.
  */
 export async function aiGatewayAdmin(seed: Seed, { place }: { place: Place }) {
   const local = place.kind === "local";

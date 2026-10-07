@@ -39,7 +39,7 @@ test(`${mode}: external-directory Allow once under real SSE pressure preserves u
     return { renderer, network, establishedKeys: keys };
   };
   evidence.recordJsonArtifact("Permission pressure contract", {
-    mode, engine: "v1", placement: "local", sourceElectron: true,
+    mode, engine: "v1", sourceElectron: true,
     permissions: "Two real read tools request external_directory on a disposable fixture file; no synthetic approvals",
     pressure: "Archive witness mechanism: eight real SSE fetches on the exact local-server origin, drain bodies, abort only for cleanup",
     inference: "Mock final response held by agent-hold after the real tool result; no final text rendered",

@@ -346,7 +346,7 @@ function chromeArgs(cdpPort: number, profileDir: string, startUrl: string, headl
     "--no-first-run",
     "--no-default-browser-check",
     "--disable-popup-blocking",
-    // Avoid the Daytona preview h2 stall when ~28 dev chunks multiplex; h1.1 loads them, while plain-http local Den never negotiates h2.
+    // Avoid the dev-server h2 stall when ~28 dev chunks multiplex; h1.1 loads them, while plain-http local Den never negotiates h2.
     "--disable-http2",
     startUrl,
   ];
@@ -787,15 +787,13 @@ export function createLocalHost(options: LocalHostOptions): DisposableHost {
   }
 
 
-// Containers (Daytona sandboxes) cannot use Chromium's SUID sandbox: the helper
-// binary in a mounted pnpm store is not root-owned, and Electron aborts with
+// Containers cannot use Chromium's SUID sandbox: the helper binary in a
+// mounted pnpm store is not root-owned, and Electron aborts with
 // "The SUID sandbox helper binary was found, but is not configured correctly".
 // The desktop honours ELECTRON_EXTRA_LAUNCH_ARGS (apps/desktop/electron/main.mjs),
-// so pass the container-safe switches when we detect a sandbox.
+// so pass the container-safe switches when the caller opts in.
 function insideContainerSandbox(env: NodeJS.ProcessEnv = process.env): boolean {
-  if ((env.DAYTONA_SANDBOX_ID ?? "").trim().length > 0) return true;
-  if ((env.OPENWORK_EVAL_CONTAINER_ELECTRON ?? "").trim() === "1") return true;
-  return existsSync("/daytona-secrets") || existsSync("/daytona-artifacts");
+  return (env.OPENWORK_EVAL_CONTAINER_ELECTRON ?? "").trim() === "1";
 }
 
 function containerLaunchArgs(existing: string | undefined): string | undefined {
@@ -812,8 +810,6 @@ function containerLaunchArgs(existing: string | undefined): string | undefined {
  * reasonably own. Callers should not have to know that Electron needs a live X
  * server, or that a previous run's process may still hold a port.
  */
-const sleepMs = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 async function displayAnswers(display: string): Promise<boolean> {
   return new Promise((resolve) => {
     execFile("xdpyinfo", ["-display", display], (error) => resolve(!error));
@@ -826,21 +822,7 @@ async function ensureDisplay(repoRoot: string, env: NodeJS.ProcessEnv, log: (mes
   if (await displayAnswers(display)) return;
   // A stale /tmp/.X11-unix socket is not proof the server is alive: Electron
   // exits with "Missing X server or $DISPLAY", which looks like a hung renderer.
-  const starter = join(repoRoot, ".devcontainer", "start-daytona-vnc.sh");
-  if (!existsSync(starter)) {
-    log(`Display ${display} is not answering and ${starter} is missing; Electron will fail to start.`);
-    return;
-  }
-  log(`Display ${display} is not answering; starting the virtual display...`);
-  spawnDetached("bash", [starter], { cwd: repoRoot, env, logPath: join(repoRoot, "evals", "results", "virtual-display.log") });
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    await sleepMs(2_000);
-    if (await displayAnswers(display)) {
-      log(`Display ${display} is live.`);
-      return;
-    }
-  }
-  log(`Display ${display} still not answering after 60s; Electron will fail to start.`);
+  log(`Display ${display} is not answering; Electron will fail to start.`);
 }
 
 /**
@@ -886,9 +868,8 @@ async function ensureDisplay(repoRoot: string, env: NodeJS.ProcessEnv, log: (mes
       // check (it aborts in a child before our JS switches apply), so disable
       // the sandbox at process start the way Electron documents.
       if (insideContainerSandbox()) env.ELECTRON_DISABLE_SANDBOX = "1";
-      // Sandbox exec sessions do not export DISPLAY, but Xvfb is running on :99
-      // (see .devcontainer/start-daytona-electron.sh). Without it Electron
-      // segfaults instead of opening a window.
+      // Container sessions do not export DISPLAY, but Xvfb is running on :99.
+      // Without it Electron segfaults instead of opening a window.
       if (insideContainerSandbox() && (env.DISPLAY ?? "").trim().length === 0) env.DISPLAY = ":99";
       const logPath = join(profileRoot, "electron.log");
       const packagedBinary = opts.devCommand === undefined

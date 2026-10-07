@@ -5,7 +5,7 @@ import { needs, test } from "@openwork/testkit";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 test("finite archive and permission IPC preserve scoped requests, cancellation, no retries and external trust boundaries", async ({ evidence }) => {
-  needs({ commands: ["bun", "node"], placement: "local" });
+  needs({ commands: ["bun", "node"] });
   for (const run of [
     { command: "node", args: ["--test", "--test-concurrency=1", "apps/desktop/electron/finite-http-fetch.test.mjs", "apps/desktop/electron/no-bare-external-fetch.test.mjs"], cwd: root },
     { command: "bun", args: ["test", "--isolate", "tests/opencode-archive-transport.test.ts", "tests/opencode-stream-timeout.test.ts"], cwd: `${root}apps/app` },

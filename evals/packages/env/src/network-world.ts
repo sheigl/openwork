@@ -3,9 +3,6 @@ const RESOURCE_ID = /^[a-z][a-z0-9-]{0,62}$/;
 
 export type PlacementProvider =
   | "local"
-  | "daytona-linux"
-  | "daytona-k3s"
-  | "daytona-windows"
   | "macos-runner";
 
 export type PlacementOs = "linux" | "macos" | "windows";
@@ -18,7 +15,6 @@ export type PlacementCapability =
   | "surface:electron"
   | "kubernetes:k3s"
   | "port:localhost"
-  | "port:daytona-preview"
   | "network:dns"
   | "network:firewall"
   | "network:mtu"
@@ -58,7 +54,7 @@ export interface PlacementCommandPlan {
   argv: readonly string[];
 }
 
-export type PortExposureMode = "localhost" | "daytona-preview";
+export type PortExposureMode = "localhost";
 
 export interface PortExposurePlan {
   placementId: string;
@@ -134,7 +130,6 @@ function requirePositiveInteger(name: string, value: number): number {
 }
 
 function inferredOs(provider: PlacementProvider): PlacementOs {
-  if (provider === "daytona-windows") return "windows";
   if (provider === "macos-runner") return "macos";
   return "linux";
 }
@@ -157,17 +152,12 @@ function placementCapabilities(provider: PlacementProvider, os: PlacementOs, pri
     : os === "macos"
       ? "command:zsh"
       : "command:bash";
-  const port: PlacementCapability = provider.startsWith("daytona") ? "port:daytona-preview" : "port:localhost";
+  const port: PlacementCapability = "port:localhost";
   const capabilities: PlacementCapability[] = [
     shell,
     port,
   ];
-  if (provider !== "daytona-k3s") {
-    capabilities.push("surface:chrome", "surface:electron");
-  }
-  if (provider === "daytona-k3s") {
-    capabilities.push("kubernetes:k3s", "network:dns", "network:firewall");
-  }
+  capabilities.push("surface:chrome", "surface:electron");
   if (privileged) {
     capabilities.push("network:mtu", "network:routes", "network:tls-intercept");
     if (os === "windows") {
@@ -182,14 +172,8 @@ function placementCapabilities(provider: PlacementProvider, os: PlacementOs, pri
 }
 
 function requireCompatibleOs(provider: PlacementProvider, os: PlacementOs): void {
-  if (provider === "daytona-windows" && os !== "windows") {
-    throw new Error('Placement provider "daytona-windows" requires os "windows".');
-  }
   if (provider === "macos-runner" && os !== "macos") {
     throw new Error('Placement provider "macos-runner" requires os "macos".');
-  }
-  if ((provider === "daytona-linux" || provider === "daytona-k3s") && os !== "linux") {
-    throw new Error(`Placement provider ${JSON.stringify(provider)} requires os "linux".`);
   }
 }
 
@@ -251,14 +235,6 @@ export function runOnPlacement(placement: Placement, command: string): Placement
 export function exposePort(placement: Placement, port: number): PortExposurePlan {
   const validPort = requirePositiveInteger("port", port);
   if (validPort > 65_535) throw new Error("port must be between 1 and 65535.");
-  if (placementHasCapability(placement, "port:daytona-preview")) {
-    return {
-      placementId: placement.id,
-      port: validPort,
-      mode: "daytona-preview",
-      requiresRuntimeResolution: true,
-    };
-  }
   requirePlacementCapabilities(placement, ["port:localhost"]);
   return {
     placementId: placement.id,

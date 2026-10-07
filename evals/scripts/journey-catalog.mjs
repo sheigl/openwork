@@ -62,7 +62,7 @@ const definitions = {
   // this journey must provide both binaries for it to pass (#4848).
   'released-enterprise-activated.e2e.test.ts': { name: 'Open and update an activated enterprise install against its Den', placement: 'local', needs: PACKAGED_BINARY },
   'cross-server-handoff-atomic-commit.e2e.test.ts': { name: 'Switch servers and recover enrollment', critical: true, placement: 'local' },
-  // Flips sso_connection directly in the testkit database; Daytona Den exposes no database.
+  // Flips sso_connection directly in the testkit database.
   'scim-okta-lifecycle.e2e.test.ts': { name: 'Provision members from an Okta-shaped SCIM client', placement: 'local' },
   // Drives the real error boundary and web error monitor in a standalone Chrome; needs no Den or Electron.
   'crash-recovery.e2e.test.ts': { name: 'Recover from a render crash without leaking secrets' },
@@ -71,7 +71,7 @@ const definitions = {
     name: 'Send the first prompt from the New task route', placement: 'local',
     cases: [
       { id: 'DEN-LOCAL-SEND', engines: ['v1'], optIns: ['OPENWORK_EVAL_E2E_TESTS'], example: { placement: '--local', engine: 'v1' } },
-      { id: 'MOBILE-CHAT-01', engines: ['v1', 'v2'], optIns: ['OPENWORK_EVAL_E2E_TESTS'], example: { placement: '--daytona', engine: 'v1' } },
+      { id: 'MOBILE-CHAT-01', engines: ['v1', 'v2'], optIns: ['OPENWORK_EVAL_E2E_TESTS'], example: { placement: '--local', engine: 'v1' } },
     ],
   },
   'streamed-markdown-answer.e2e.test.ts': {
@@ -126,7 +126,7 @@ export async function catalog(root = new URL('../specs/', import.meta.url)) {
       name: spec.replace('.e2e.test.ts', '').replaceAll('-', ' '),
       critical: false,
       model: 'mock',
-      placement: rawDesktop ? 'manual' : 'daytona',
+      placement: rawDesktop ? 'manual' : 'local',
       ...definitions[spec],
     };
   }));

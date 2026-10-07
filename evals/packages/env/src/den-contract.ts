@@ -59,7 +59,7 @@ export interface ServerOptions {
 
 export interface Den extends AsyncDisposable {
   ref: DenRef;
-  placement?: { kind: "local" } | { kind: "daytona"; sandboxId: string };
+  placement?: { kind: "local" };
   admin: DenSession;
   members: Record<string, DenSession>;
   mocks: Record<string, MockHandle>;

@@ -12,7 +12,6 @@ export * from "./litellm.ts";
 export * from "./litellm-provider.ts";
 export * from "./network-world.ts";
 export * from "./eval-engine.ts";
-export * from "./eval-ref.ts";
 export { requestBrowserTask } from "./browser-task.ts";
 export * from "./browser-fixture.ts";
 export * from "./checkpoint-capability.ts";

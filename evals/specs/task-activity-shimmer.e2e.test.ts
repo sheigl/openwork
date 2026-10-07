@@ -31,7 +31,7 @@ test("ACT-01 delegated-task activity stays with its original message after a fol
   evidence.recordJsonArtifact("Parent working footer during delegation", { working, advanced });
   await user.type("composer", "What is the update?", { verify: true });
   // Busy Enter queues; the production Cmd/Ctrl+Enter shortcut sends steering now.
-  await user.press(world.app.handle.hostKind !== "daytona" && process.platform === "darwin" ? "Meta+Enter" : "Control+Enter");
+  await user.press(process.platform === "darwin" ? "Meta+Enter" : "Control+Enter");
   await user.see({ text: "Build isolated Azure repro" });
   await user.see({ text: "What is the update?" });
   // TODO(primitive): inspect the visual treatment classes on a delegated-task status row.

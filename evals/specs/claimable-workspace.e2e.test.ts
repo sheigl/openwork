@@ -4,7 +4,7 @@ import { claimableWorkspace } from "../worlds/claimable-workspace.ts";
 
 const test = spec.world(claimableWorkspace, {
   timeout: 600_000,
-  needs: { commands: ["bun", "pnpm"], placement: "local" },
+  needs: { commands: ["bun", "pnpm"] },
   resources: { surfaces: ["web"], services: ["den"] },
 });
 

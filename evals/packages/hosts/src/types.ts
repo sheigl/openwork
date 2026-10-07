@@ -42,8 +42,6 @@ export interface ElectronSurfaceOptions {
   devCommand?: "dev" | "dev:electron";
   /** Skip host-side sidecar/helper preparation when the caller intentionally uses existing resources. */
   prepareSharedResources?: boolean;
-  /** Never share a pooled sandbox with another surface; placement provisions this one its own. */
-  ownSandbox?: boolean;
 }
 
 export interface ChromeSurfaceOptions {
@@ -72,9 +70,10 @@ export interface Host {
    * The repo/workspace root ON THIS HOST.
    *
    * A spec that passes `process.cwd()` as a workspace path is only correct when
-   * the driver and the app share a filesystem. Drive a sandbox from a laptop and
-   * the app is asked to open a directory that does not exist there — observed as
-   * onboarding hanging on "Power your first task" with no error. Ask the host.
+   * the driver and the app share a filesystem. Drive an app on one machine
+   * from a laptop and the app is asked to open a directory that does not
+   * exist there — observed as onboarding hanging on "Power your first task"
+   * with no error. Ask the host.
    */
   workspaceRoot: string;
   previewUrl?(port: number): Promise<string>;

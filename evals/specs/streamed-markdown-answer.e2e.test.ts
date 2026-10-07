@@ -509,8 +509,6 @@ continuityTest("CONT-01 restores the exact cumulative prefix while one answer st
     expect(facts.surface).toBe("web");
     expect(facts.requestedPlacement).toBe(facts.resolvedPlacement);
     expect(facts.actualHostKind).toBe(facts.resolvedPlacement);
-    if (facts.actualHostKind === "daytona") expect(facts.actualSandboxId).toMatch(/^.+$/);
-    else expect(facts.actualSandboxId).toBeNull();
     expect(facts.healthStatus).toBe(200);
     expect(facts.engineStatus).toBe(200);
     expect(facts.engineChatRouting).toBe(world.engine === "v2");
@@ -524,11 +522,10 @@ continuityTest("CONT-01 restores the exact cumulative prefix while one answer st
     expect(facts.electronBridge).toBe(false);
     expect(facts.origin).toBe(facts.expectedOrigin);
     expect(facts.browser).toMatch(/HeadlessChrome\//);
-    if (facts.actualHostKind === "daytona") expect(facts.actualSourceSha).toMatch(/^[0-9a-f]{40,64}$/);
-    else if (facts.actualSourceSha !== null) expect(facts.actualSourceSha).toMatch(/^[0-9a-f]{40,64}$/);
+    if (facts.actualSourceSha !== null) expect(facts.actualSourceSha).toMatch(/^[0-9a-f]{40,64}$/);
     evidence.recordAssertionEvidence(
       "Continuity headless app-web and engine fixture are real",
-      `${facts.surface}; ${world.engine}; requested/resolved/actual placement=${facts.requestedPlacement}/${facts.resolvedPlacement}/${facts.actualHostKind}; sandbox=${facts.actualSandboxId ?? "none"}; ${facts.browser}; native ${facts.nativeStatus}; no Electron bridge=${String(!facts.electronBridge)}`,
+      `${facts.surface}; ${world.engine}; requested/resolved/actual placement=${facts.requestedPlacement}/${facts.resolvedPlacement}/${facts.actualHostKind}; ${facts.browser}; native ${facts.nativeStatus}; no Electron bridge=${String(!facts.electronBridge)}`,
       true,
     );
   });

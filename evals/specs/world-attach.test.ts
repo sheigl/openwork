@@ -35,7 +35,7 @@ async function organizations(session: DenSession): Promise<Map<string, string>> 
 }
 
 test("a script world attaches to an existing Den without owning it", { timeout: 300_000 }, async ({ evidence, place }) => {
-  needs({ placement: "local" });
+  needs({});
   if (!await localMysqlIsRunning()) {
     throw new SkipError("local MySQL on 127.0.0.1:3306");
   }

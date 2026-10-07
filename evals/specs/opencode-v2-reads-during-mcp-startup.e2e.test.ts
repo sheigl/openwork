@@ -9,7 +9,7 @@ import { engineParity } from "../worlds/engine-parity.ts";
 const test = spec.world(engineParity, {
   timeout: 420_000,
   resources: { surfaces: ["appWeb"], services: ["mock"] },
-  needs: { placement: "local", env: ["OPENWORK_EVAL_ENGINE"] },
+  needs: { env: ["OPENWORK_EVAL_ENGINE"] },
 });
 
 function record(value: unknown): value is Record<string, unknown> {

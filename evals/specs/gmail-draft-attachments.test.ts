@@ -5,7 +5,7 @@ import { gmailAttachmentFixtures, gmailDraftAttachments, gmailReplyFixtures } fr
 // New journey: native MCP preflight must reach the managed engine's real after-hook,
 // then the authenticated host upload and Den MIME writer, without a second tool call.
 test("Gmail attachments cross the real MCP, engine hook, host and Den boundaries without sending or changing identity", { timeout: 600_000 }, async ({ place, evidence }) => {
-  needs({ commands: ["bun", "pnpm"], placement: "local" });
+  needs({ commands: ["bun", "pnpm"] });
   await using world = await gmailDraftAttachments(place);
   console.log(`placement: ${place.kind} (pinned managed OpenCode, isolated Den, synthetic Google and model)`);
   const uploads = () => world.requests().filter((entry) => entry.path === "/v1/direct-uploads/google-workspace/gmail-drafts");

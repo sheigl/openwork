@@ -119,7 +119,7 @@ export async function pickAppTarget(
 /**
  * Chromium reports webSocketDebuggerUrl with its own local host
  * (e.g. ws://127.0.0.1:9825/devtools/page/<id>), which breaks when the
- * endpoint is reached through a proxy (e.g. Daytona preview URLs).
+ * endpoint is reached through a proxy.
  * Rebuild the ws URL on the base URL's host and scheme.
  */
 export function debuggerUrlFor(baseUrl: string, target: CdpTarget): string {
@@ -154,9 +154,9 @@ export async function resolveCdpBaseUrl(candidates: string[]): Promise<string> {
 }
 
 // Default upper bound on a single CDP round trip (handshake or a send/reply).
-// Without this, a stalled Daytona proxy WebSocket (seen intermittently — the
-// handshake or a single message reply just never arrives) hangs the calling
-// promise forever with no error, which hangs the whole flow silently.
+// Without this, a stalled WebSocket (seen intermittently — the handshake or a
+// single message reply just never arrives) hangs the calling promise forever
+// with no error, which hangs the whole flow silently.
 const DEFAULT_CDP_TIMEOUT_MS = 20_000;
 
 export function connect(

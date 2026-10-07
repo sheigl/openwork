@@ -105,11 +105,8 @@ export async function chatStreamContinuityLiveWeb(seed: Seed, context: { place: 
 
 function requestedPlacement(place: Place): Place["kind"] {
   const value = process.env.OPENWORK_WORLD_PLACE?.trim();
-  if (value === undefined || value === "") return place.kind;
-  if (value !== "local" && value !== "daytona") {
-    throw new Error(`OPENWORK_WORLD_PLACE must be local or daytona; received ${JSON.stringify(value)}.`);
-  }
-  return value;
+  if (value === undefined || value === "" || value === "local") return place.kind;
+  throw new Error(`OPENWORK_WORLD_PLACE must be local; received ${JSON.stringify(value)}.`);
 }
 
 async function createSession(seed: Seed, app: Surface, title: string) {
@@ -245,7 +242,6 @@ export async function chatStreamContinuityWeb(seed: Seed, context: { place: Plac
       requestedPlacement: declaredPlacement,
       resolvedPlacement: context.place.kind,
       actualHostKind: app.handle.hostKind,
-      actualSandboxId: app.handle.sandboxId ?? null,
     }),
     [Symbol.asyncDispose]: () => engineHttpEvents[Symbol.asyncDispose](),
   };

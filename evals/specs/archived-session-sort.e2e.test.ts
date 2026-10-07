@@ -8,7 +8,7 @@ import { archivedSessionSort } from "../worlds/archived-session-sort.ts";
 
 const test = spec.world(archivedSessionSort, {
   resources: { surfaces: ["appWeb"], services: [] },
-  needs: { commands: ["bun", "pnpm"], placement: "local" },
+  needs: { commands: ["bun", "pnpm"] },
   timeout: 240_000,
 });
 

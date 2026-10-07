@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { engineSessionProbe, observeSidebarExpansion, readAvailableModels, selectModel, waitFor } from "@openwork/behaviors";
 import { resolveEvalEngine, SkipError } from "@openwork/env";
 import type { Place, Seed } from "@openwork/env";
-import { daytonaSandbox, defaultDaytonaExec, desktop as launchDesktop, execInSandbox, startMockOnSandbox } from "@openwork/hosts";
+import { desktop as launchDesktop } from "@openwork/hosts";
 import { startMockMcp } from "@openwork/labs";
 import { configureProvider } from "./chat.ts";
 
@@ -815,10 +815,7 @@ export async function archiveActiveSessions(seed: Seed, { place }: { place: Plac
   await using resources = new AsyncDisposableStack();
   const providerId = "session-archive-mock";
   const modelId = "mock-agent-workload-model";
-  const remoteRoot = place.kind === "daytona" ? place.host()?.workspaceRoot : undefined;
-  if (place.kind === "daytona" && !remoteRoot?.startsWith("/")) throw new Error("Archive main-fetch bootstrap requires the remote source checkout path");
-  const preload = remoteRoot ? `${remoteRoot.replace(/\/+$/, "")}/evals/fixtures/archive-main-fetch.cjs`
-    : fileURLToPath(new URL("../fixtures/archive-main-fetch.cjs", import.meta.url));
+  const preload = fileURLToPath(new URL("../fixtures/archive-main-fetch.cjs", import.meta.url));
   const app = await seed.desktop({ name: "session-archive-button", model: `${providerId}/${modelId}`,
     env: { NODE_OPTIONS: [process.env.NODE_OPTIONS, `--require ${JSON.stringify(preload)}`].filter(Boolean).join(" ") },
   });
@@ -827,15 +824,7 @@ export async function archiveActiveSessions(seed: Seed, { place }: { place: Plac
     throw new Error(`Archive main-fetch bootstrap was not installed from ${preload}`, { cause: error });
   });
   const definition = seed.mock({ agentWorkloads: [{ promptMarker: "session-archive", matchAll: true, finalReply: "Archive fixture reply.", steps: [] }] });
-  const sandbox = app.handle.sandboxId;
-  const booted = app.handle.hostKind === "daytona"
-    ? await (async () => {
-      if (!sandbox || !definition.connect) throw new Error("Archive mock requires its desktop sandbox and mock adapter.");
-      const remote = await startMockOnSandbox({ sandbox, port: definition.daytonaPort });
-      return definition.connect(remote.url);
-    })()
-    : await definition.boot(place);
-  const mock = resources.use(booted.handle);
+  const mock = resources.use(await definition.boot(place).then((booted) => booted.handle));
   const setHeld = async (held: boolean) => {
     const response = await fetch(`${mock.url}/admin/agent-hold`, {
       method: "POST", headers: { "content-type": "application/json" },
@@ -1348,18 +1337,9 @@ export async function archiveSessionsInLinkedWorkspace(seed: Seed) {
   const real = `${root}/real`;
   const link = `${root}/link`;
   // The real parent as the app host resolves it; `seed.tmpPath` itself may sit behind a symlink (macOS /tmp).
-  let resolvedReal: string;
-  if (app.handle.sandboxId) {
-    const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
-    const script = `mkdir -p ${quote(real)} && ln -sfn ${quote(real)} ${quote(link)} && readlink -f ${quote(real)}`;
-    const result = await execInSandbox(defaultDaytonaExec, app.handle.sandboxId, `printf %s ${Buffer.from(script).toString("base64")} | base64 -d | bash`, { timeoutMs: 15_000, context: "Arrange the linked workspace parent" });
-    resolvedReal = result.stdout.trim();
-    if (result.code !== 0 || !resolvedReal.startsWith("/")) throw new Error(`Linked workspace parent arrangement failed: ${result.stderr || result.stdout}`);
-  } else {
-    await mkdir(real, { recursive: true });
-    await symlink(real, link);
-    resolvedReal = await realpath(real);
-  }
+  await mkdir(real, { recursive: true });
+  await symlink(real, link);
+  const resolvedReal = await realpath(real);
   const world = await archiveWorld(seed, app, `${link}/OpenWork Chat`, ["Split pane conversation", "Other pane"], { create: true });
   return {
     ...world,
@@ -1636,14 +1616,7 @@ export async function externalSessionVisibility(seed: Seed) {
       ? rawServerInfo.clientToken
       : "";
   if (!serverToken) throw new Error("OpenWork server info did not include a token.");
-  let externalServerUrl = serverUrl.origin;
-  if (app.handle.hostKind === "daytona") {
-    const sandboxId = app.handle.sandboxId?.trim();
-    if (!sandboxId) throw new Error("Daytona desktop did not expose its sandbox id.");
-    await using previewHost = daytonaSandbox(sandboxId);
-    if (!previewHost.previewUrl) throw new Error("Daytona host cannot expose the OpenWork server port.");
-    externalServerUrl = await previewHost.previewUrl(Number(serverUrl.port));
-  }
+  const externalServerUrl = serverUrl.origin;
   return {
     app,
     home,

@@ -4,7 +4,7 @@ import { agentMcpSignup } from "../worlds/agent-mcp-signup.ts";
 
 const test = spec.world(agentMcpSignup, {
   timeout: 600_000,
-  needs: { commands: ["bun", "pnpm"], placement: "local" },
+  needs: { commands: ["bun", "pnpm"] },
   resources: { surfaces: ["web"], services: ["den", "mock"] },
 });
 

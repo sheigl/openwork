@@ -16,9 +16,8 @@ import {
 } from "@openwork/testkit";
 
 const e2eTestsEnabled = process.env.OPENWORK_EVAL_E2E_TESTS === "1";
-const daytonaEnabled = process.env.OPENWORK_EVAL_DAYTONA === "1";
 const configuredDen = Boolean(process.env.OPENWORK_EVAL_DEN_API_URL?.trim());
-const localServicesRequired = !daytonaEnabled && !configuredDen;
+const localServicesRequired = !configuredDen;
 const mysqlOpen = await localMysqlIsRunning();
 const redisOpen = await localRedisIsRunning();
 const runnable = e2eTestsEnabled && (!localServicesRequired || (mysqlOpen && redisOpen));

@@ -98,7 +98,7 @@ export async function skillJitWeb(seed: Seed, context: { place: Place }) {
   const workspacePath = seed.tmpPath("skill-jit");
   const booted: { cloud: MockCloudSkillsHandle | null } = { cloud: null };
   const cloudBoot: MockBoot = {
-    async boot() {
+    async boot(_place: Place) {
       const handle = await startMockCloudSkills({ identities: [skillJitAccounts.a, skillJitAccounts.b] });
       booted.cloud = handle;
       return { handle, env: ({ name, url, mcpUrl }) => deriveMockEnv(name, url, mcpUrl) };

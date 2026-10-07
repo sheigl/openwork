@@ -9,7 +9,6 @@
     "artifacts:index": "node packages/test-artifacts/bin/artifact-index.mjs",
     "artifacts:publish": "node packages/test-artifacts/bin/publish-pr.mjs",
     "evidence:judge": "node packages/test-evidence/bin/test-evidence-judge.mjs",
-    "provision:org-connector-two-members": "node scripts/provision-org-connector-two-members.ts",
     "lint:layers": "depcruise --config .dependency-cruiser.cjs --ignore-known .dependency-cruiser-known-violations.json packages specs worlds bin runner scripts ",
     "check": "pnpm run check:browser && pnpm run lint:layers && node scripts/spec-channel-ratchet.mjs && node scripts/spec-boundary-ratchet.mjs",
     "typecheck": "node scripts/typecheck.mjs",

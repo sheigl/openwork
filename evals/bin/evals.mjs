@@ -22,17 +22,14 @@ const usage = `Usage: node evals/bin/evals.mjs [test-names...] [flags]
 Run E2E tests:
   --with-llm-vision  Judge vision claims inline (default: defer judging)
   --local            Force isolated local resources and clear inherited remote placement
-  --daytona          Require Daytona (fails if the CLI is not authenticated)
   --den <url>        Set OPENWORK_EVAL_DEN_API_URL=<url>
-  --strict-ref       Fail when the runner HEAD differs from the ref the Daytona sandbox builds
   --checkpoints      Save checkpoints for tests tagged "checkpoints" and steps marked { checkpoint: true };
                      worlds that cannot capture print one warning and run normally (requires --local)
-                     (OPENWORK_EVAL_REF, default dev); OPENWORK_EVAL_STRICT_REF=1 does the same
   --engine <v1|v2>   Select the app chat engine for a named test
   --surface <value>  Validate declared app surface (web|electron); never switches implementation
   --case <prefix>    Run one registered case by its exact prefix
 
-Without a placement flag, Daytona is used when the daytona CLI is authenticated, otherwise local.
+Runs are always local; `--den <url>` attaches to a Den at an explicit URL instead.
 
 Publish recorded evidence (no test reruns or model calls):
   --publish         Publish completed evidence
@@ -51,7 +48,7 @@ Other:
   --help, -h        Show this help
 
 Publish mode cannot be combined with test names, run-selection flags, --with-llm-vision,
---daytona, --local, or --den. Named tests auto-consent to opt-in flags declared in their source;
+--local, or --den. Named tests auto-consent to opt-in flags declared in their source;
 value-bearing environment variables are never auto-set. Paid OPENWORK_EVAL_LIVE_OPENAI
 requires an explicit environment opt-in or a registered --case declaring that opt-in.
 
@@ -95,7 +92,6 @@ export function parseArgs(args) {
     testNames: [],
     withLlmVision: false,
     local: false,
-    daytona: false,
     publish: false,
     dryRun: false,
     force: false,
@@ -108,8 +104,6 @@ export function parseArgs(args) {
     else if (arg === "--with-llm-vision") options.withLlmVision = true;
     else if (arg === "--list") options.list = true;
     else if (arg === "--local") options.local = true;
-    else if (arg === "--daytona") options.daytona = true;
-    else if (arg === "--strict-ref") options.strictRef = true;
     else if (arg === "--checkpoints") options.checkpoints = true;
     else if (arg === "--publish") options.publish = true;
     else if (arg === "--dry-run") options.dryRun = true;
@@ -140,16 +134,13 @@ export function parseArgs(args) {
     }
   }
 
-  // The runner stays local; Freestyle-backed worlds start their own VM. Daytona
-  // placement cannot capture, and local runs never publish PR evidence.
+  // The runner stays local; Freestyle-backed worlds start their own VM.
+  // Local runs never publish PR evidence.
   if (options.checkpoints && (!options.local || options.publish)) {
     throw new Error("--checkpoints requires --local and cannot be combined with --publish. Ordinary runs are unchanged.");
   }
-  if (options.local && (options.daytona || options.den !== undefined)) {
-    const conflicts = [];
-    if (options.daytona) conflicts.push("--daytona");
-    if (options.den !== undefined) conflicts.push("--den");
-    throw new Error(`--local is mutually exclusive with ${conflicts.join(" and ")}.`);
+  if (options.local && options.den !== undefined) {
+    throw new Error("--local is mutually exclusive with --den.");
   }
 
   if (options.engine !== undefined && !["v1", "v2"].includes(options.engine)) {
@@ -174,9 +165,7 @@ export function parseArgs(args) {
     if (options.testNames.length > 0) conflicts.push("test names");
     if (options.withLlmVision) conflicts.push("--with-llm-vision");
     if (options.local) conflicts.push("--local");
-    if (options.daytona) conflicts.push("--daytona");
     if (options.den !== undefined) conflicts.push("--den");
-    if (options.strictRef) conflicts.push("--strict-ref");
     if (options.engine !== undefined) conflicts.push("--engine");
     if (options.surface !== undefined) conflicts.push("--surface");
     if (options.case !== undefined) conflicts.push("--case");
@@ -205,23 +194,11 @@ export function parseArgs(args) {
 // through below. Only these remote-placement inputs are removed by --local.
 const REMOTE_PLACEMENT_ENV = [
   "OPENWORK_WORLD_PLACE",
-  "OPENWORK_EVAL_DAYTONA",
-  "OPENWORK_EVAL_DAYTONA_SANDBOX",
-  "OPENWORK_EVAL_DAYTONA_SANDBOX_ID",
-  "OPENWORK_EVAL_DAYTONA_DEN_SANDBOX",
-  "OPENWORK_EVAL_DAYTONA_DEN_WEB_URL",
-  "OPENWORK_EVAL_DAYTONA_DEN_API_URL",
-  "OPENWORK_EVAL_DAYTONA_DESKTOP_SANDBOX",
   "OPENWORK_EVAL_DEN_API_URL",
   "OPENWORK_EVAL_DEN_WEB_URL",
 ];
 
 const TRANSPORT_SELECTOR_ENV = new Set([
-  "OPENWORK_EVAL_DAYTONA",
-  "OPENWORK_EVAL_DAYTONA_SANDBOX",
-  "OPENWORK_EVAL_DAYTONA_SANDBOX_ID",
-  "OPENWORK_EVAL_DAYTONA_DEN_SANDBOX",
-  "OPENWORK_EVAL_DAYTONA_DESKTOP_SANDBOX",
   "OPENWORK_EVAL_DEN_API_URL",
   "OPENWORK_EVAL_DEN_WEB_URL",
   "OPENWORK_EVAL_REF",
@@ -231,15 +208,7 @@ const TRANSPORT_SELECTOR_ENV = new Set([
 ]);
 
 /** Resolve the child environment before any test process can provision resources. */
-export function daytonaAuthenticated(exec = spawnSync) {
-  const result = exec("daytona", ["snapshot", "list", "-f", "json"], {
-    stdio: "ignore",
-    timeout: 30_000,
-  });
-  return !result.error && result.status === 0;
-}
-
-export function resolveRunEnvironment(options, env = process.env, probe = daytonaAuthenticated) {
+export function resolveRunEnvironment(options, env = process.env) {
   const childEnv = { ...env };
   if (options.checkpoints) childEnv.OPENWORK_EVIDENCE_CHECKPOINTS = "1";
   const worldPlace = env.OPENWORK_WORLD_PLACE?.trim() || undefined;
@@ -252,92 +221,8 @@ export function resolveRunEnvironment(options, env = process.env, probe = dayton
     childEnv.OPENWORK_EVAL_DEN_API_URL = options.den;
     return { env: childEnv, placement: "attached", reason: "--den" };
   }
-  if (options.daytona) {
-    if (!probe()) {
-      throw new Error("--daytona requested but the daytona CLI is missing or not authenticated. Install it and run `daytona login`.");
-    }
-    childEnv.OPENWORK_EVAL_DAYTONA = "1";
-    childEnv.OPENWORK_WORLD_PLACE = "daytona";
-    return { env: childEnv, placement: "daytona", reason: "--daytona" };
-  }
-  if (worldPlace === "daytona") {
-    childEnv.OPENWORK_EVAL_DAYTONA = "1";
-    return { env: childEnv, placement: "daytona", reason: "OPENWORK_WORLD_PLACE=daytona in environment" };
-  }
-  if (worldPlace !== undefined) {
-    delete childEnv.OPENWORK_EVAL_DAYTONA;
-    return { env: childEnv, placement: "local", reason: `OPENWORK_WORLD_PLACE=${worldPlace} in environment` };
-  }
-  if (env.OPENWORK_EVAL_DAYTONA?.trim() === "1") {
-    childEnv.OPENWORK_WORLD_PLACE = "daytona";
-    return { env: childEnv, placement: "daytona", reason: "OPENWORK_EVAL_DAYTONA=1 in environment" };
-  }
-  if (probe()) {
-    childEnv.OPENWORK_EVAL_DAYTONA = "1";
-    childEnv.OPENWORK_WORLD_PLACE = "daytona";
-    return { env: childEnv, placement: "daytona", reason: "daytona CLI authenticated" };
-  }
-  childEnv.OPENWORK_WORLD_PLACE = "local";
-  return { env: childEnv, placement: "local", reason: "daytona CLI missing or not authenticated" };
-}
-
-const GIT_SHA = /^[0-9a-f]{7,64}$/i;
-
-function gitOutput(args, exec, cwd, timeout = 10_000) {
-  const result = exec("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout });
-  return !result.error && result.status === 0 ? String(result.stdout).trim() : "";
-}
-
-function remoteSha(listing, ref) {
-  const rows = listing.split(/\r?\n/).map((line) => line.trim().split(/\s+/)).filter((row) => GIT_SHA.test(row[0] ?? ""));
-  const head = rows.find((row) => row[1] === `refs/heads/${ref}`) ?? rows.find((row) => row[1] === ref) ?? rows[0];
-  return head ? head[0].toLowerCase() : "";
-}
-
-/**
- * Specs always execute from this checkout, but under Daytona the product is
- * built from OPENWORK_EVAL_REF (default dev) inside the sandbox. Resolve that
- * ref the way the provisioning gate does (against origin) so a runner/ref
- * mismatch is named before any sandbox is provisioned.
- */
-export function resolveRefAlignment(placement, env = process.env, exec = spawnSync, cwd = repoRoot) {
-  if (placement !== "daytona") return null;
-  const sandboxRef = env.OPENWORK_EVAL_REF?.trim() || env.GITHUB_SHA?.trim() || "dev";
-  const runnerSha = gitOutput(["rev-parse", "HEAD"], exec, cwd).toLowerCase();
-  const runnerBranch = gitOutput(["rev-parse", "--abbrev-ref", "HEAD"], exec, cwd);
-  const sandboxSha = GIT_SHA.test(sandboxRef)
-    ? sandboxRef.toLowerCase()
-    : remoteSha(gitOutput(["ls-remote", "--quiet", "origin", sandboxRef], exec, cwd, 30_000), sandboxRef);
-  const mismatch = sandboxSha && runnerSha ? !runnerSha.startsWith(sandboxSha) : null;
-  return { sandboxRef, sandboxSha, runnerSha, runnerBranch, mismatch };
-}
-
-function shortSha(sha) {
-  return sha ? sha.slice(0, 9) : "unknown";
-}
-
-export function refAlignmentLabel(alignment) {
-  if (!alignment) return "";
-  const resolved = alignment.sandboxSha && alignment.sandboxSha !== alignment.sandboxRef ? `@${shortSha(alignment.sandboxSha)}` : "";
-  const state = alignment.mismatch === true ? " [RUNNER/REF MISMATCH]" : alignment.mismatch === null ? " [unresolved]" : "";
-  return ` ref=${alignment.sandboxRef}${resolved}${state}`;
-}
-
-export function refAlignmentWarning(alignment) {
-  if (!alignment || alignment.mismatch === false) return null;
-  const branch = alignment.runnerBranch && alignment.runnerBranch !== "HEAD" ? ` (${alignment.runnerBranch})` : "";
-  const runner = `runner HEAD ${shortSha(alignment.runnerSha)}${branch}`;
-  if (alignment.mismatch === null) {
-    return `could not resolve sandbox ref ${alignment.sandboxRef} against origin, so it cannot be confirmed to match ${runner}.`;
-  }
-  const resolved = alignment.sandboxSha !== alignment.sandboxRef ? ` (${shortSha(alignment.sandboxSha)})` : "";
-  return `${runner} differs from the ref the Daytona sandbox builds: ${alignment.sandboxRef}${resolved}. `
-    + "Specs run from this checkout while the sandbox builds that ref, so the verdict would judge another commit's product "
-    + "(test-run.json records both as gitSha and sandboxRef). Push this branch and export OPENWORK_EVAL_REF=$(git rev-parse HEAD).";
-}
-
-export function strictRefRequested(options, env = process.env) {
-  return Boolean(options.strictRef) || env.OPENWORK_EVAL_STRICT_REF?.trim() === "1";
+  childEnv.OPENWORK_WORLD_PLACE = worldPlace ?? "local";
+  return { env: childEnv, placement: "local", reason: worldPlace ? `OPENWORK_WORLD_PLACE=${worldPlace} in environment` : "local" };
 }
 
 export function resolveTestNames(names, files = journeyFiles()) {
@@ -418,9 +303,9 @@ export function resolveExecutionSelection(options, resolved, env = process.env, 
   };
 }
 
-export function buildChildEnvironment(options, resolved, sources, env = process.env, probe = daytonaAuthenticated) {
+export function buildChildEnvironment(options, resolved, sources, env = process.env) {
   const selection = resolveExecutionSelection(options, resolved, env, sources);
-  const placement = resolveRunEnvironment(options, selection.env, probe);
+  const placement = resolveRunEnvironment(options, selection.env);
   const childEnv = { ...placement.env };
   const consented = new Set(["OPENWORK_EVAL_E2E_TESTS"]);
   const requested = selection.optIns ?? sources.flatMap(consentVarsFromSource)
@@ -433,11 +318,7 @@ export function buildChildEnvironment(options, resolved, sources, env = process.
 
   // Consent can never override the already-resolved runtime placement.
   if (placement.placement === "local") {
-    delete childEnv.OPENWORK_EVAL_DAYTONA;
     childEnv.OPENWORK_WORLD_PLACE = "local";
-  } else if (placement.placement === "daytona") {
-    childEnv.OPENWORK_EVAL_DAYTONA = "1";
-    childEnv.OPENWORK_WORLD_PLACE = "daytona";
   }
   return { ...selection, ...placement, env: childEnv, consented: [...consented].sort() };
 }
@@ -577,14 +458,8 @@ function run(options) {
     ...(selection.testNamePattern ? ["--testNamePattern", selection.testNamePattern] : []),
     ...resolved.map((file) => relative(evalsDir, file).split(sep).join("/")),
   ];
-  const alignment = resolveRefAlignment(placement, childEnv);
-  const refWarning = refAlignmentWarning(alignment);
-  process.stderr.write(`selection: engine=${selection.engine ?? "legacy"} surface=${selection.surface ?? "legacy"} case=${selection.caseId ?? "all"}; placement: ${placement} (${reason})${refAlignmentLabel(alignment)}\n`);
+  process.stderr.write(`selection: engine=${selection.engine ?? "legacy"} surface=${selection.surface ?? "legacy"} case=${selection.caseId ?? "all"}; placement: ${placement} (${reason})\n`);
   for (const world of selection.plan.worlds) process.stderr.write(`contract: ${testName(world.file)}:${world.line} ${worldContract(world)}\n`);
-  if (refWarning) {
-    if (strictRefRequested(options)) throw new Error(refWarning);
-    process.stderr.write(`warning: ${refWarning} Pass --strict-ref to fail instead of warning.\n`);
-  }
   const child = spawnSync("pnpm", vitestArgs, { cwd: evalsDir, env: childEnv, stdio: "inherit" });
   const status = childStatus(child);
   let report;
@@ -609,7 +484,6 @@ function run(options) {
   process.stdout.write(`${JSON.stringify({
     command: "evals:e2e",
     lane: "e2e",
-    daytona: placement === "daytona",
     placement,
     engine: selection.engine ?? "legacy",
     surface: selection.surface ?? "legacy",
@@ -617,9 +491,6 @@ function run(options) {
     case: selection.caseId ?? null,
     vision: options.withLlmVision ? "inline" : "defer",
     files: options.testNames.length > 0 ? options.testNames : ["all"],
-    sandboxRef: alignment?.sandboxRef ?? null,
-    sandboxSha: alignment?.sandboxSha || null,
-    refMismatch: alignment?.mismatch ?? null,
     ...summary,
     ...(selection.caseId ? { selectedCasePassed: verdict === "passed" } : {}),
     consented,

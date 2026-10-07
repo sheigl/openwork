@@ -60,7 +60,7 @@ test("the Den command palette searches pages, navigates, and records recents", a
   });
 
   await step("the keyboard shortcut reopens it with Connectors under Recent", async () => {
-    await user.press(world.web.handle.hostKind !== "daytona" && process.platform === "darwin" ? "Meta+K" : "Control+K");
+    await user.press(process.platform === "darwin" ? "Meta+K" : "Control+K");
     await user.see(paletteInput);
     await user.see({ text: "RECENT" });
     await user.see({ role: "option", label: /^Connectors/ });

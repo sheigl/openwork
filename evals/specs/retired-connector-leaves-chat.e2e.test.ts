@@ -7,7 +7,7 @@ import { retiredPluginConnectionInApp } from "../worlds/retired-plugin-connectio
 // retired-plugin-connection.e2e.test.ts.
 const test = spec.world(retiredPluginConnectionInApp, {
   resources: { surfaces: ["appWeb"], services: ["den", "mock"] },
-  needs: { commands: ["bun", "pnpm"], placement: "local" },
+  needs: { commands: ["bun", "pnpm"] },
   timeout: 900_000,
 });
 

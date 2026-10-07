@@ -2,10 +2,8 @@ import { createServer, request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { setTimeout as delay } from "node:timers/promises";
 import { allocateFreePort } from "@openwork/cdp";
-import { startFaultProxyOnSandbox } from "@openwork/hosts";
 import type { IncomingHttpHeaders, IncomingMessage, OutgoingHttpHeaders, Server, ServerResponse } from "node:http";
 import type { DenRef } from "@openwork/behaviors";
-import type { Place } from "./place.ts";
 
 export interface FaultRequest {
   method: string;
@@ -22,15 +20,10 @@ export interface FaultProxy extends AsyncDisposable {
     latency(pathPrefix: string, delayMs: number, opts?: { times?: number }): Promise<void>;
     clear(): Promise<void>;
   };
-  /** Local lane: the live in-memory log (back-compat). Remote lane: the snapshot from the last requestLog() call. */
+  /** The live in-memory log. */
   requests: FaultRequest[];
-  /** Authoritative log in both lanes: local returns a copy; remote fetches from the control plane and refreshes `requests`. */
+  /** Authoritative log: returns a copy of the in-memory log. */
   requestLog(): Promise<FaultRequest[]>;
-}
-
-export interface FaultProxyOptions {
-  place?: Place;
-  sandbox?: string;
 }
 
 interface RuleBase {
@@ -99,9 +92,8 @@ function writeUpstreamResponse(client: ServerResponse, status: number, message: 
 /**
  * Local Den web answers `/api/den/*` with a 307 to den-api on another origin,
  * and fetch drops `Authorization` on cross-origin redirects, so every bearer
- * call through the proxy would 401. Send those paths straight to den-api, as
- * the single-origin Daytona remote effectively does. Returns the upstream path
- * or null for a web path.
+ * call through the proxy would 401. Send those paths straight to den-api.
+ * Returns the upstream path or null for a web path.
  */
 function denApiPath(requested: URL, api: URL): string | null {
   const prefix = "/api/den";
@@ -158,8 +150,8 @@ function forward(
 
 async function localFaultProxy(ref: DenRef): Promise<FaultProxy> {
   const upstream = new URL(ref.webUrl);
-  // A single-origin Den (Daytona remote, or a test double) serves /api/den
-  // itself; only a split local Den needs its API calls routed around den-web.
+  // A single-origin Den (or a test double) serves /api/den itself; only a
+  // split local Den needs its API calls routed around den-web.
   const apiOrigin = new URL(ref.apiUrl);
   const api = apiOrigin.origin === upstream.origin ? undefined : apiOrigin;
   const port = await allocateFreePort();
@@ -222,74 +214,6 @@ async function localFaultProxy(ref: DenRef): Promise<FaultProxy> {
   };
 }
 
-function isFaultRequest(value: unknown): value is FaultRequest {
-  if (typeof value !== "object" || value === null) return false;
-  return "method" in value && typeof value.method === "string"
-    && "path" in value && typeof value.path === "string"
-    && "status" in value && typeof value.status === "number"
-    && "faulted" in value && typeof value.faulted === "boolean"
-    && "at" in value && typeof value.at === "number";
-}
-
-export async function faultProxy(ref: DenRef, options: FaultProxyOptions = {}): Promise<FaultProxy> {
-  if (options.place?.kind !== "daytona") return localFaultProxy(ref);
-  if (!options.sandbox) {
-    throw new Error("fault proxy on Daytona needs the Den sandbox id; pass `sandbox: den.placement.sandboxId`.");
-  }
-
-  // Match the local lane when a world explicitly points the web-facing ref
-  // at the API. Always routing through Den Web can redirect away the bearer.
-  const apiUpstream = ref.webUrl === ref.apiUrl;
-  const remote = await startFaultProxyOnSandbox({ sandbox: options.sandbox, upstream: apiUpstream ? "api" : "web" });
-  const requests: FaultRequest[] = [];
-  const control = async (path: string, init: RequestInit = {}): Promise<Response> => {
-    const response = await fetch(`${remote.url}/__openwork_faults/${path}`, {
-      ...init,
-      headers: { ...init.headers, "x-openwork-fault-token": remote.token },
-    });
-    if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      throw new Error(`Fault proxy control ${path} failed: HTTP ${response.status}${body ? ` ${body}` : ""}`);
-    }
-    return response;
-  };
-  const post = async (path: string, body?: unknown): Promise<void> => {
-    await control(path, {
-      method: "POST",
-      headers: body === undefined ? undefined : { "content-type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-  };
-  let disposed = false;
-  return {
-    ref: { apiUrl: apiUpstream ? remote.url : `${remote.url}/api/den`, webUrl: remote.url },
-    faults: {
-      status(pathPrefix, statusCode, opts = {}) {
-        return post("rules", { kind: "status", pathPrefix, statusCode, times: opts.times, body: opts.body });
-      },
-      latency(pathPrefix, delayMs, opts = {}) {
-        return post("rules", { kind: "latency", pathPrefix, delayMs, times: opts.times });
-      },
-      clear() {
-        return post("clear");
-      },
-    },
-    requests,
-    async requestLog(): Promise<FaultRequest[]> {
-      const response = await control("requests");
-      const body: unknown = await response.json();
-      if (typeof body !== "object" || body === null || !("requests" in body) || !Array.isArray(body.requests) || !body.requests.every(isFaultRequest)) {
-        throw new Error("Fault proxy control requests returned an invalid response.");
-      }
-      requests.splice(0, requests.length, ...body.requests);
-      return [...requests];
-    },
-    async [Symbol.asyncDispose](): Promise<void> {
-      if (disposed) return;
-      disposed = true;
-      await remote.stop().catch((error: unknown) => {
-        console.error(`[openwork/testkit] Fault proxy cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
-      });
-    },
-  };
+export async function faultProxy(ref: DenRef): Promise<FaultProxy> {
+  return localFaultProxy(ref);
 }

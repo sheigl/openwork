@@ -12,10 +12,7 @@ test("desktop registration recovers from a transient Den outage without another 
     env: { DEN_AUTOMATIONS_ENABLED: "true" },
     org: { name: "Synthetic registration recovery", admin: { name: "Test Admin" } },
   })
-  await using proxy = await faultProxy(den.ref, {
-    place,
-    sandbox: den.placement?.kind === "daytona" ? den.placement.sandboxId : undefined,
-  })
+  await using proxy = await faultProxy(den.ref)
   // Keep the advertised API origin on the fault proxy. Otherwise desktop
   // handoff follows Den's runtime config directly to the upstream API.
   await proxy.faults.status("/api/runtime-config", 200, {

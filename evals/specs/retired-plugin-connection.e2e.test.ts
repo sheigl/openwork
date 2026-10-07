@@ -6,7 +6,7 @@ import { retiredPluginConnection, type IndexEntry } from "../worlds/retired-plug
 // desktops (the connection index, the usable list, and execute_capability).
 const test = spec.world(retiredPluginConnection, {
   resources: { surfaces: [], services: ["den", "mock"] },
-  needs: { commands: ["bun", "pnpm"], placement: "local" },
+  needs: { commands: ["bun", "pnpm"] },
   timeout: 600_000,
 });
 

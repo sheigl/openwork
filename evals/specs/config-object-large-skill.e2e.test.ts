@@ -8,7 +8,7 @@ import { localMysqlIsRunning, needs, server, test } from "@openwork/testkit";
 // TEXT column's 65,535-byte cap failed the whole write with errno 1406 on
 // strict-mode MySQL/Vitess and surfaced as HTTP 500.
 const e2eTestsEnabled = process.env.OPENWORK_EVAL_E2E_TESTS === "1";
-const localPlacement = process.env.OPENWORK_EVAL_DAYTONA !== "1" && !process.env.OPENWORK_EVAL_DEN_API_URL?.trim();
+const localPlacement = !process.env.OPENWORK_EVAL_DEN_API_URL?.trim();
 const mysqlOverride = Boolean(process.env.OPENWORK_EVAL_MYSQL_URL?.trim());
 const mysqlOpen = !localPlacement || mysqlOverride || (await localMysqlIsRunning());
 const title = !e2eTestsEnabled
@@ -70,8 +70,8 @@ test.skipIf(!e2eTestsEnabled || !mysqlOpen)(title, async ({ evidence, place }) =
     "x-openwork-org-id": orgId,
   };
 
-  // Large multibyte bodies over the Daytona preview proxy need a wider, still
-  // bounded, per-request budget than the denFetch default.
+  // Large multibyte bodies need a wider, still bounded, per-request budget
+  // than the denFetch default.
   const largeRequestSignal = () => AbortSignal.timeout(120_000);
 
   // 120 KB > 65,535-byte TEXT cap: this exact insert failed with errno 1406 (DEN-API-Z).

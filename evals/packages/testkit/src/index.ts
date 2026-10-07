@@ -5,7 +5,6 @@ export { denFetch, signIn as signInDen } from "@openwork/behaviors";
 export { screenshot } from "@openwork/test-evidence";
 export type { BrowserEvaluation, BrowserScript } from "@openwork/cdp";
 export { control, createDesktopHandoffGrant, evalIn, quitDesktop, signInDesktopAs } from "@openwork/behaviors";
-export { requestDenLoopback } from "@openwork/labs";
 export { desktop as relaunchDesktop, electronProfilePaths } from "@openwork/hosts";
 export type { DesktopHandle } from "@openwork/hosts";
 export type { Surface } from "@openwork/cdp";
@@ -18,7 +17,6 @@ export type { StepRecord, TestOutcome, TraceEntry } from "@openwork/test-evidenc
 export { test, CHECKPOINTS_TAG } from "./fixture.ts";
 export * from "@openwork/env";
 export * from "./brief.ts";
-export * from "./app-web-preview-witness.ts";
 export * from "./eventually.ts";
 export * from "./link.ts";
 export * from "./spec/index.ts";
