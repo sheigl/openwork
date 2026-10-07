@@ -1,6 +1,7 @@
 .git
 .github
 .opencode
+.devcontainer
 node_modules
 **/node_modules
 tmp

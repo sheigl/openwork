@@ -1,12 +1,14 @@
 services:
   openwork-host:
     build:
-      context: .
-      dockerfile: Dockerfile
+      # The server is built from this repository (this fork is not on npm).
+      context: ..
+      dockerfile: packaging/docker/Dockerfile
       args:
-        # Keep this in sync with apps/server/package.json if you want a pinned release.
-        OPENWORK_SERVER_VERSION: 0.18.4
-        OPENCODE_VERSION: 1.17.11
+        # Keep in sync with constants.json (opencodeVersion).
+        OPENCODE_VERSION: 1.18.30
+        # Optional: serve the engine binary from your own mirror.
+        # OPENCODE_DOWNLOAD_URL: "https://your-mirror/opencode-linux-x64-baseline.tar.gz"
     ports:
       - "8787:8787"
     environment:

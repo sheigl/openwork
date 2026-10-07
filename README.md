@@ -41,7 +41,31 @@ npm install -g openwork-server
 openwork-server
 ```
 
+(For this fork, prefer the Docker build below — the npm package is the upstream release and does not include the fork's de-cloud changes.)
+
 It writes its configuration to `~/.config/openwork` and listens on `127.0.0.1:8787` unless told otherwise. **Do not bind it to a public interface.** The server injects a valid client token into the page it serves for any `Host` header, so anything that can reach the port is signed in. Keep it on loopback, or put it behind your own authenticating reverse proxy on a trusted network.
+
+### Running in Docker
+
+The server is built **from this repository** (this fork is not published to npm):
+
+```bash
+docker build -f packaging/docker/Dockerfile -t openwork .
+docker run --rm -it \
+  -p 8787:8787 \
+  -v "$PWD/workspace:/workspace" \
+  -v "$PWD/data:/data" \
+  openwork
+```
+
+Or with compose from `packaging/docker/`:
+
+```bash
+cd packaging/docker
+docker compose up --build
+```
+
+The workspace is mounted at `/workspace` (the files your agent works on) and `/data` holds persistent state (server config, OpenCode profile and caches). The container binds `0.0.0.0` inside itself — the same trust model applies: keep the published port on a trusted network or behind an authenticating reverse proxy. The engine binary is downloaded from the upstream OpenCode release at build time; point `OPENCODE_DOWNLOAD_URL` at your own mirror to avoid that fetch.
 
 Useful environment variables:
 
