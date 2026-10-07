@@ -287,14 +287,16 @@ export function AccountStatusMenu(props: AccountStatusMenuProps) {
     status: denAuth.status,
     hasUser: user !== null,
   });
+  // With cloud sign-in off (self-hosted fork default) the signed-out row keeps
+  // the runtime status it hosts but drops the cloud branding.
   const accountLabel = signedIn
     ? user.name?.trim() || user.email
-    : restoringSession ? "OpenWork Cloud" : "Sign in";
+    : restoringSession ? "OpenWork Cloud" : shellConfig.cloudSignin ? "Sign in" : "Account";
   // The sidebar row shows the name only; the email stays inside the account
   // menu so it is not permanently on screen (matches Claude Code and Codex).
   const accountDetail = signedIn
     ? "OpenWork Cloud"
-    : restoringSession ? "Restoring your session" : "Sync with OpenWork Cloud";
+    : restoringSession ? "Restoring your session" : shellConfig.cloudSignin ? "Sync with OpenWork Cloud" : "Self-hosted";
 
   const runtimeStatus = props.showConnectionStatus
     ? resolveRuntimeStatus({
@@ -526,7 +528,7 @@ export function AccountStatusMenu(props: AccountStatusMenuProps) {
             <LogOut className="size-3.5" />
             Log out
           </DropdownMenuItem>
-        ) : restoringSession ? null : (
+        ) : restoringSession || !shellConfig.cloudSignin ? null : (
           <div
             className="flex flex-col gap-2 px-2 py-2"
             onPointerDown={(event) => event.stopPropagation()}

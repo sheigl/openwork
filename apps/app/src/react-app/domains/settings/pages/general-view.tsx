@@ -18,6 +18,7 @@ import {
 import { t } from "../../../../i18n";
 import type { SettingsTab } from "../../../../app/types";
 import { Button } from "@/components/ui/button";
+import { useShellConfig } from "../../../shell/shell-config";
 
 export type GeneralSettingsViewProps = {
   onNavigateTab: (tab: SettingsTab) => void;
@@ -82,6 +83,11 @@ function SettingsCard(props: {
 }
 
 export function GeneralSettingsView(props: GeneralSettingsViewProps) {
+  const { config: shellConfig } = useShellConfig();
+  // Self-hosted fork default: no hosted cloud, so hide the Cloud account card.
+  const visibleGlobalCards = shellConfig.cloudSignin
+    ? globalCards
+    : globalCards.filter((card) => card.tab !== "cloud-account");
   return (
     <div className="w-full max-w-3xl space-y-8">
       {/* Workspace settings */}
@@ -108,7 +114,7 @@ export function GeneralSettingsView(props: GeneralSettingsViewProps) {
           Global
         </div>
         <div className="grid grid-cols-2 gap-2">
-          {globalCards.map((card) => (
+          {visibleGlobalCards.map((card) => (
             <SettingsCard
               key={card.tab}
               icon={card.icon}

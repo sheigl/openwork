@@ -42,7 +42,10 @@ export const DEFAULT_SHELL_CONFIG: ShellConfig = {
   sidebar: true,
   docsButton: true,
   feedbackButton: true,
-  cloudSignin: true,
+  // Fork default: this build is self-hosted only, with no hosted control
+  // plane. Cloud sign-in surfaces stay in the tree but are hidden by default;
+  // a deployment with its own Den can re-enable them.
+  cloudSignin: false,
   welcomePage: true,
   starterCards: true,
   modelPicker: true,

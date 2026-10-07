@@ -23,7 +23,7 @@ type WelcomePageProps = {
   onUseManualFolder?: () => void;
   showManualFolder?: boolean;
   onTeamSignIn?: () => void;
-  onJoinOrganization: () => void;
+  onJoinOrganization?: () => void;
 };
 
 export function WelcomePage({
@@ -115,21 +115,23 @@ export function WelcomePage({
                     : (getStartedLabel || t("welcome.use_without_cloud"))}
                 </Button>
 
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-                    onClick={onJoinOrganization}
-                    data-testid="welcome-join-org"
-                  >
-                    <span className="font-medium text-foreground/90">
-                      {t("welcome.join_org")}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {t("welcome.join_org_subtitle")}
-                    </span>
-                  </button>
-                </div>
+                {onJoinOrganization ? (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                      onClick={onJoinOrganization}
+                      data-testid="welcome-join-org"
+                    >
+                      <span className="font-medium text-foreground/90">
+                        {t("welcome.join_org")}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {t("welcome.join_org_subtitle")}
+                      </span>
+                    </button>
+                  </div>
+                ) : null}
 
                 {error ? (
                   <p className="text-center text-xs text-destructive">{error}</p>

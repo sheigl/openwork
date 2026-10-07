@@ -10,6 +10,7 @@ import type { Agent } from "@opencode-ai/sdk/v2/client";
 
 import type { OpenworkServerClient } from "@/app/lib/openwork-server";
 import { useOpencodeEngineControls } from "./opencode-engine-controls";
+import { useShellConfig } from "./shell-config";
 import { t } from "@/i18n";
 import {
   Command,
@@ -150,6 +151,7 @@ export type CommandPaletteProps = {
  */
 export function CommandPalette(props: CommandPaletteProps) {
   const platform = usePlatform();
+  const { config: shellConfig } = useShellConfig();
   const engine = useOpencodeEngineControls(props.engineClient, props.open);
   const [mode, setMode] = useState<CommandPaletteMode>("root");
   const [query, setQuery] = useState("");
@@ -426,7 +428,8 @@ export function CommandPalette(props: CommandPaletteProps) {
           },
         }]
       : []),
-    {
+    // Self-hosted fork default: no hosted cloud to sign into.
+    ...(shellConfig.cloudSignin ? [{
       id: "cloud.sign_in",
       title: "Sign in to OpenWork Cloud",
       keywords: ["login", "account", "organization", "org", "den", "cloud"],
@@ -435,8 +438,8 @@ export function CommandPalette(props: CommandPaletteProps) {
         props.onClose();
         props.onOpenSettings("/settings/cloud-account");
       },
-    },
-  ], [props]);
+    }] : []),
+  ], [props, shellConfig.cloudSignin]);
 
   const allRootItems = useMemo(
     () => [

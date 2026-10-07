@@ -40,6 +40,7 @@ import { writeActiveWorkspaceId, writeLastSessionFor, writeWorkspaceProjectDimen
 import { workspaceSessionRoute } from "./workspace-routes";
 import { ensureDesktopLocalOpenworkConnection } from "./desktop-local-openwork";
 import { shouldHoldWelcomeForDenSession } from "./welcome-den-session";
+import { useShellConfig } from "./shell-config";
 
 function subscribeToDenSettings(onStoreChange: () => void) {
   if (typeof window === "undefined") return () => {};
@@ -136,6 +137,7 @@ function welcomeReducer(state: WelcomeState, action: WelcomeAction): WelcomeStat
  */
 export function WelcomeRoute() {
   const navigate = useNavigate();
+  const { config: shellConfig } = useShellConfig();
   const local = useLocal();
   const platform = usePlatform();
   const denAuth = useDenAuth();
@@ -399,8 +401,10 @@ export function WelcomeRoute() {
         onManualFolderChange={setManualFolder}
         onUseManualFolder={handleUseManualFolder}
         showManualFolder={import.meta.env.DEV && isDesktopRuntime()}
-        onTeamSignIn={handleTeamSignIn}
-        onJoinOrganization={() => setJoinOrganizationOpen(true)}
+        // Self-hosted fork default: no hosted control plane, so the cloud
+        // onboarding CTAs are hidden (they would open dead-end URLs).
+        onTeamSignIn={shellConfig.cloudSignin ? handleTeamSignIn : undefined}
+        onJoinOrganization={shellConfig.cloudSignin ? () => setJoinOrganizationOpen(true) : undefined}
       />
       <JoinOrganizationDialog
         open={joinOrganizationOpen}
